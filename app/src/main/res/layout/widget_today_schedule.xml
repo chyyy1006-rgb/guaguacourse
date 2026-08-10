@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_background">
+
+    <TextView
+        android:id="@+id/widgetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="今天 · 第1周"
+        android:textColor="@color/widget_text_primary"
+        android:textStyle="bold"
+        android:textSize="17sp"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widgetSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widgetEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:text="今天没有课程"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/widgetRow1"
+        style="@style/WidgetCourseRow">
+        <TextView android:id="@+id/widgetTime1" style="@style/WidgetTimeText" />
+        <LinearLayout style="@style/WidgetCourseTextColumn">
+            <TextView android:id="@+id/widgetCourse1" style="@style/WidgetCourseText" />
+            <TextView android:id="@+id/widgetRoom1" style="@style/WidgetRoomText" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widgetRow2"
+        style="@style/WidgetCourseRow">
+        <TextView android:id="@+id/widgetTime2" style="@style/WidgetTimeText" />
+        <LinearLayout style="@style/WidgetCourseTextColumn">
+            <TextView android:id="@+id/widgetCourse2" style="@style/WidgetCourseText" />
+            <TextView android:id="@+id/widgetRoom2" style="@style/WidgetRoomText" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widgetRow3"
+        style="@style/WidgetCourseRow">
+        <TextView android:id="@+id/widgetTime3" style="@style/WidgetTimeText" />
+        <LinearLayout style="@style/WidgetCourseTextColumn">
+            <TextView android:id="@+id/widgetCourse3" style="@style/WidgetCourseText" />
+            <TextView android:id="@+id/widgetRoom3" style="@style/WidgetRoomText" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/widgetTaskContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="待办"
+            android:textColor="@color/widget_accent"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widgetTask1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/widgetTask2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="9sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,15 @@
+{
+  "versionCode": 9,
+  "versionName": "4.9.4",
+  "title": "瓜瓜课程表 4.9.4",
+  "publishedAt": "2026-08-10",
+  "forceUpdate": false,
+  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/latest",
+  "changelog": [
+    "意见反馈使用国内可访问的腾讯问卷",
+    "腾讯问卷的文件上传题现在可调用 Android 系统文件选择器",
+    "App、Android 系统和设备型号支持分别复制，也可一键复制全部",
+    "反馈页面继续在 App 内打开，无需调用邮件客户端",
+    "保留加载进度、重新加载和浏览器备用入口"
+  ]
+}

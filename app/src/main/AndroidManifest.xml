@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <!--
+        WebView 访问西北工业大学翱翔门户。
+    -->
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+
+    <!--
+        Android 13+ 普通通知。
+    -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS" />
+
+
+    <!--
+        通知渠道振动。普通权限，不会弹运行时授权框。
+    -->
+    <uses-permission
+        android:name="android.permission.VIBRATE" />
+
+
+    <!--
+        Android 12+ 课程精确提醒。
+    -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+
+    <!--
+        手机重启后重新建立课程提醒。
+    -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+
+    <application
+
+        android:allowBackup="true"
+
+        android:dataExtractionRules="@xml/data_extraction_rules"
+
+        android:fullBackupContent="@xml/backup_rules"
+
+        android:icon="@mipmap/ic_launcher_watermelon"
+
+        android:label="@string/app_name"
+
+        android:roundIcon="@mipmap/ic_launcher_watermelon"
+
+        android:supportsRtl="true"
+
+        android:usesCleartextTraffic="false"
+
+        android:theme="@style/Theme.NPUcourse">
+
+
+        <activity
+
+            android:name=".MainActivity"
+
+            android:exported="true"
+
+            android:label="@string/app_name"
+
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.NPUcourse" />
+
+
+        <!--
+            可切换桌面图标。v4.9.1 起提供 4 套瓜瓜课程表品牌图标。
+            下方旧 alias 仅为已安装用户升级兼容，不在设置页展示。
+        -->
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconWatermelonAlias"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_watermelon"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconCourseAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_course"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconPlannerAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_planner"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconMascotAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_mascot"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- v4.8/v4.9 旧桌面图标 alias：升级兼容，启动后由 LauncherIconManager 关闭。 -->
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconClassicAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_watermelon"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconIndigoAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_course"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconBlueAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_planner"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconObsidianAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_mascot"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconRoseAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_watermelon"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="com.example.npucourse.launcher.IconSunsetAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_watermelon"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity-alias>
+
+        <!--
+            课程提醒。
+        -->
+        <receiver
+
+            android:name=".notification.CourseAlarmReceiver"
+
+            android:enabled="true"
+
+            android:exported="false" />
+
+
+        <!-- DDL / 待办截止前提醒 -->
+        <receiver
+            android:name=".notification.TaskAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+
+        <!--
+            重启 / 修改系统时间后重建提醒。
+        -->
+        <receiver
+
+            android:name=".notification.AlarmRescheduleReceiver"
+
+            android:enabled="true"
+
+            android:exported="false">
+
+
+            <intent-filter>
+
+
+                <action
+                    android:name="android.intent.action.BOOT_COMPLETED" />
+
+
+                <action
+                    android:name="android.intent.action.TIME_SET" />
+
+
+                <action
+                    android:name="android.intent.action.TIMEZONE_CHANGED" />
+
+
+            </intent-filter>
+
+
+        </receiver>
+
+
+        <!-- 桌面今日课程小组件 -->
+        <receiver
+            android:name=".widget.TodayScheduleWidgetProvider"
+            android:enabled="true"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_schedule_widget_info" />
+        </receiver>
+
+
+        <!-- 桌面下一节课小组件 -->
+        <receiver
+            android:name=".widget.NextCourseWidgetProvider"
+            android:enabled="true"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/next_course_widget_info" />
+        </receiver>
+
+
+        <!-- DDL 倒计时 2x1 小组件 -->
+        <receiver
+            android:name=".widget.TaskCompactWidgetProvider"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/task_compact_widget_info" />
+        </receiver>
+
+        <!-- 可缩放待办清单小组件 -->
+        <receiver
+            android:name=".widget.TaskListWidgetProvider"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/task_list_widget_info" />
+        </receiver>
+
+        <!-- 课程开始/结束边界触发 Widget 刷新 -->
+        <receiver
+            android:name=".widget.WidgetRefreshReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+
+        <!-- 课表图片 / ICS 分享使用的安全文件 URI -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+
+    </application>
+
+
+</manifest>

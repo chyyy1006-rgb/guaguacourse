@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="widget_background_color">#FFFDFEFF</color>
+    <color name="widget_text_primary">#FF222329</color>
+    <color name="widget_text_secondary">#FF777984</color>
+    <color name="widget_accent">#FF5B5BD6</color>
+
+    <!-- 瓜瓜课程表品牌桌面图标背景（Adaptive Icon） -->
+    <color name="launcher_icon_watermelon_bg">#43D879</color>
+    <color name="launcher_icon_course_bg">#78D84A</color>
+    <color name="launcher_icon_planner_bg">#2EDB91</color>
+    <color name="launcher_icon_mascot_bg">#5ED56C</color>
+
+</resources>
