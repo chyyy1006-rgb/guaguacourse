@@ -4,9 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.example.npucourse.data.AppDatabase
+import com.example.npucourse.data.academic.AcademicCacheStore
+import com.example.npucourse.data.academic.AcademicPreferencesStore
 import com.example.npucourse.data.CourseRepository
 import com.example.npucourse.data.SemesterRepository
 import com.example.npucourse.data.settings.SettingsRepository
+import com.example.npucourse.widget.AcademicOverviewWidgetUpdater
 import com.example.npucourse.widget.TodayScheduleWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,35 +87,21 @@ class AlarmRescheduleReceiver :
                     }
                         ?: semesters.firstOrNull()
 
-                if (
-                    selectedSemester == null
-                ) {
-                    CourseAlarmScheduler
-                        .cancelAll(
-                            applicationContext
-                        )
-                    return@launch
-                }
-
-                val selectedCourses =
-                    allCourses.filter {
-                        it.semesterId ==
-                            selectedSemester.id
+                if (selectedSemester == null) {
+                    CourseAlarmScheduler.cancelAll(applicationContext)
+                } else {
+                    val selectedCourses = allCourses.filter {
+                        it.semesterId == selectedSemester.id
                     }
 
-                CourseAlarmScheduler
-                    .rescheduleAll(
-                        context =
-                            applicationContext,
-                        courses =
-                            selectedCourses,
-                        semesterStartMillis =
-                            selectedSemester.startMillis,
-                        campus =
-                            selectedSemester.campus,
-                        reminderMinutes =
-                            settings.reminderMinutes
+                    CourseAlarmScheduler.rescheduleAll(
+                        context = applicationContext,
+                        courses = selectedCourses,
+                        semesterStartMillis = selectedSemester.startMillis,
+                        campus = selectedSemester.campus,
+                        reminderMinutes = settings.reminderMinutes
                     )
+                }
 
                 TaskAlarmScheduler.rescheduleAll(
                     context = applicationContext,
@@ -123,6 +112,18 @@ class AlarmRescheduleReceiver :
                 TodayScheduleWidgetUpdater.updateAll(
                     applicationContext
                 )
+
+                val academicPreferences = AcademicPreferencesStore.get(applicationContext)
+                ExamAlarmScheduler.rescheduleAll(
+                    context = applicationContext,
+                    exams = AcademicCacheStore.loadExams(applicationContext)?.result?.exams.orEmpty(),
+                    enabled = academicPreferences.examRemindersEnabled
+                )
+                AcademicSyncScheduler.schedule(
+                    applicationContext,
+                    academicPreferences.backgroundSyncEnabled
+                )
+                AcademicOverviewWidgetUpdater.updateAll(applicationContext)
 
             } finally {
                 pendingResult.finish()

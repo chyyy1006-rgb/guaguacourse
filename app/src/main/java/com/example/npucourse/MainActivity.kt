@@ -49,7 +49,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.npucourse.data.AppDatabase
+import com.example.npucourse.data.academic.AcademicCacheStore
 import com.example.npucourse.launcher.LauncherIconManager
+import com.example.npucourse.notification.AcademicNotificationHelper
+import com.example.npucourse.notification.AcademicSyncScheduler
 import com.example.npucourse.notification.CourseAlarmScheduler
 import com.example.npucourse.notification.NotificationHelper
 import com.example.npucourse.notification.TaskAlarmScheduler
@@ -78,6 +81,7 @@ class MainActivity :
     ComponentActivity() {
 
     private var taskNavigationRequestToken by mutableIntStateOf(0)
+    private var academicInfoNavigationRequestToken by mutableIntStateOf(0)
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -87,6 +91,11 @@ class MainActivity :
         if (intent?.getBooleanExtra("open_academic_tasks", false) == true) {
             taskNavigationRequestToken++
             intent?.removeExtra("open_academic_tasks")
+        }
+
+        if (intent?.getBooleanExtra("open_academic_info", false) == true) {
+            academicInfoNavigationRequestToken++
+            intent?.removeExtra("open_academic_info")
         }
 
         enableEdgeToEdge()
@@ -118,7 +127,8 @@ class MainActivity :
                 ) {
                     NpuCourseApp(
                         settingsViewModel = settingsViewModel,
-                        taskNavigationRequestToken = taskNavigationRequestToken
+                        taskNavigationRequestToken = taskNavigationRequestToken,
+                        academicInfoNavigationRequestToken = academicInfoNavigationRequestToken
                     )
                 }
             }
@@ -132,6 +142,10 @@ class MainActivity :
             taskNavigationRequestToken++
             intent.removeExtra("open_academic_tasks")
         }
+        if (intent.getBooleanExtra("open_academic_info", false)) {
+            academicInfoNavigationRequestToken++
+            intent.removeExtra("open_academic_info")
+        }
     }
 }
 
@@ -139,7 +153,8 @@ class MainActivity :
 @Composable
 fun NpuCourseApp(
     settingsViewModel: SettingsViewModel,
-    taskNavigationRequestToken: Int = 0
+    taskNavigationRequestToken: Int = 0,
+    academicInfoNavigationRequestToken: Int = 0
 ) {
 
     val context =
@@ -191,13 +206,24 @@ fun NpuCourseApp(
             .collectAsState()
 
     var selectedTab by rememberSaveable {
-        mutableStateOf(if (taskNavigationRequestToken > 0) "学业" else "今天")
+        mutableStateOf(if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) "学业" else "今天")
+    }
+    var internalAcademicInfoRequestToken by remember {
+        mutableIntStateOf(academicInfoNavigationRequestToken)
     }
 
-    LaunchedEffect(taskNavigationRequestToken) {
-        if (taskNavigationRequestToken > 0) {
+    LaunchedEffect(taskNavigationRequestToken, academicInfoNavigationRequestToken) {
+        if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) {
             selectedTab = "学业"
         }
+        if (academicInfoNavigationRequestToken > internalAcademicInfoRequestToken) {
+            internalAcademicInfoRequestToken = academicInfoNavigationRequestToken
+        }
+    }
+
+    var cachedNextExam by remember { mutableStateOf(AcademicCacheStore.nextExam(context)) }
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == "今天") cachedNextExam = AcademicCacheStore.nextExam(context)
     }
 
     var permissionRefreshToken by remember {
@@ -390,6 +416,11 @@ fun NpuCourseApp(
             .createTaskReminderChannel(
                 context
             )
+        AcademicNotificationHelper.createChannel(context)
+        AcademicSyncScheduler.schedule(
+            context,
+            com.example.npucourse.data.academic.AcademicPreferencesStore.get(context).backgroundSyncEnabled
+        )
 
         withContext(Dispatchers.IO) {
             AppDatabase.getInstance(context)
@@ -526,7 +557,12 @@ fun NpuCourseApp(
                                 campus =
                                     selectedSemester.campus,
                                 tasks = selectedTasks,
-                                onToggleTask = taskViewModel::setCompleted
+                                onToggleTask = taskViewModel::setCompleted,
+                                nextExam = cachedNextExam,
+                                onOpenAcademicInfo = {
+                                    internalAcademicInfoRequestToken++
+                                    selectedTab = "学业"
+                                }
                             )
                         } else {
                             EmptySemesterPage()
@@ -600,7 +636,8 @@ fun NpuCourseApp(
 
                     "学业" -> {
                         AcademicPage(
-                            openTasksRequestToken = taskNavigationRequestToken
+                            openTasksRequestToken = taskNavigationRequestToken,
+                            openAcademicInfoRequestToken = internalAcademicInfoRequestToken
                         )
                     }
 

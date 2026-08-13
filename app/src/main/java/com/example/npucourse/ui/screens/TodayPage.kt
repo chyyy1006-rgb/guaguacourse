@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.npucourse.model.DemoCourse
 import com.example.npucourse.data.TaskEntity
+import com.example.npucourse.data.academic.AcademicTimeParser
+import com.example.npucourse.importer.NwpuExamRecord
 import com.example.npucourse.model.isActiveInWeek
 import com.example.npucourse.model.weekDisplayText
 import com.example.npucourse.util.campusDisplayName
@@ -56,7 +58,9 @@ fun TodayPage(
     currentWeek: Int,
     campus: String,
     tasks: List<TaskEntity> = emptyList(),
-    onToggleTask: (Long, Boolean) -> Unit = { _, _ -> }
+    onToggleTask: (Long, Boolean) -> Unit = { _, _ -> },
+    nextExam: NwpuExamRecord? = null,
+    onOpenAcademicInfo: () -> Unit = {}
 ) {
 
     var nowMillis by remember {
@@ -305,6 +309,14 @@ fun TodayPage(
             }
         )
 
+        if (nextExam != null) {
+            Spacer(Modifier.height(16.dp))
+            NextExamHomeCard(
+                exam = nextExam,
+                onClick = onOpenAcademicInfo
+            )
+        }
+
         if (
             nextTeachingDay != null
         ) {
@@ -437,6 +449,59 @@ fun TodayPage(
                 }
             )
         }
+}
+
+
+@Composable
+private fun NextExamHomeCard(
+    exam: NwpuExamRecord,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(17.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "最近考试",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = exam.courseName.ifBlank { "未命名考试" },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = listOf(exam.timeText, exam.location).filter { it.isNotBlank() }.joinToString(" · "),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = AcademicTimeParser.countdownText(exam.timeText) ?: "查看",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 }
 
 

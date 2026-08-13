@@ -39,6 +39,12 @@
         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
 
+    <!-- Android 9 及以下保存导出图片到系统相册。 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+
     <application
 
         android:allowBackup="true"
@@ -204,6 +210,18 @@
             android:exported="false" />
 
 
+        <!-- 考试倒计时提醒 -->
+        <receiver
+            android:name=".notification.ExamAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!-- 低频后台检查新成绩与考试变化 -->
+        <receiver
+            android:name=".notification.AcademicSyncReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
         <!--
             重启 / 修改系统时间后重建提醒。
         -->
@@ -293,6 +311,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/task_list_widget_info" />
+        </receiver>
+
+        <!-- 近期考试 + GPA 学业概览小组件 -->
+        <receiver
+            android:name=".widget.AcademicOverviewWidgetProvider"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/academic_overview_widget_info" />
         </receiver>
 
         <!-- 课程开始/结束边界触发 Widget 刷新 -->
