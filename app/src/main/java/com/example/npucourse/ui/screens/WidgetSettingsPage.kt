@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.npucourse.widget.AcademicOverviewWidgetUpdater
 import com.example.npucourse.widget.TodayScheduleWidgetPinHelper
 import com.example.npucourse.widget.TodayScheduleWidgetUpdater
 
@@ -63,7 +64,7 @@ fun WidgetSettingsPage(
         Spacer(Modifier.height(6.dp))
 
         Text(
-            text = "现在提供 4 种桌面组件：DDL 倒计时、下一节课、今日课程和可缩放待办清单。",
+            text = "现在提供 5 种桌面组件：DDL 倒计时、下一节课、今日课程、待办清单和学业概览。",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -140,11 +141,28 @@ fun WidgetSettingsPage(
 
         Spacer(Modifier.height(14.dp))
 
+        WidgetCard(
+            title = "学业概览 · 4×2",
+            subtitle = "显示最近一场考试、倒计时、考场与当前 GPA。数据来自“考试与成绩”的最近一次查询结果。",
+            buttonText = "添加学业概览",
+            onAdd = {
+                val sent = TodayScheduleWidgetPinHelper.requestAcademicOverview(context)
+                message = if (sent) {
+                    "已向桌面启动器发送“学业概览”添加请求"
+                } else {
+                    manualAddMessage()
+                }
+            }
+        )
+
+        Spacer(Modifier.height(14.dp))
+
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
                 TodayScheduleWidgetUpdater
                     .updateAll(context)
+                AcademicOverviewWidgetUpdater.updateAll(context)
 
                 message =
                     "已刷新全部 瓜瓜课程表 桌面小组件"
@@ -160,7 +178,7 @@ fun WidgetSettingsPage(
                 Build.VERSION.SDK_INT >=
                 Build.VERSION_CODES.O
             ) {
-                "如果系统没有弹出添加窗口，也可以长按手机桌面 → 小组件 → 瓜瓜课程表，手动选择 4 种组件。待办清单添加后可拖动边缘测试不同高度。"
+                "如果系统没有弹出添加窗口，也可以长按手机桌面 → 小组件 → 瓜瓜课程表，手动选择 5 种组件。待办清单添加后可拖动边缘测试不同高度。"
             } else {
                 "当前 Android 版本需要从桌面的小组件列表手动添加。"
             },

@@ -22,9 +22,9 @@ android {
 
         targetSdk = 36
 
-        versionCode = 9
+        versionCode = 14
 
-        versionName = "4.9.4"
+        versionName = "5.1.0"
 
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"

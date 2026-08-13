@@ -309,6 +309,12 @@ object TodayScheduleWidgetPinHelper {
             providerClass = TaskListWidgetProvider::class.java
         )
 
+    fun requestAcademicOverview(context: Context): Boolean =
+        requestPin(
+            context = context,
+            providerClass = AcademicOverviewWidgetProvider::class.java
+        )
+
     private fun requestPin(
         context: Context,
         providerClass: Class<*>

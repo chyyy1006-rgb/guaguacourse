@@ -45,6 +45,7 @@ private enum class AcademicSubPage {
     COURSE_MANAGEMENT,
     COURSE_SYNC,
     PORTAL_LOGIN,
+    ACADEMIC_INFO,
     TASKS,
     WEEK_INSIGHTS
 }
@@ -52,7 +53,8 @@ private enum class AcademicSubPage {
 
 @Composable
 fun AcademicPage(
-    openTasksRequestToken: Int = 0
+    openTasksRequestToken: Int = 0,
+    openAcademicInfoRequestToken: Int = 0
 ) {
 
     val context =
@@ -116,14 +118,26 @@ fun AcademicPage(
 
     var currentPage by rememberSaveable {
         mutableStateOf(
-            if (openTasksRequestToken > 0) AcademicSubPage.TASKS else AcademicSubPage.HOME
+            when {
+                openAcademicInfoRequestToken > 0 -> AcademicSubPage.ACADEMIC_INFO
+                openTasksRequestToken > 0 -> AcademicSubPage.TASKS
+                else -> AcademicSubPage.HOME
+            }
         )
     }
 
-    LaunchedEffect(openTasksRequestToken) {
-        if (openTasksRequestToken > 0) {
-            currentPage = AcademicSubPage.TASKS
+    var handledTaskRequestToken by remember { mutableStateOf(openTasksRequestToken) }
+    var handledAcademicInfoRequestToken by remember { mutableStateOf(openAcademicInfoRequestToken) }
+
+    LaunchedEffect(openTasksRequestToken, openAcademicInfoRequestToken) {
+        when {
+            openAcademicInfoRequestToken > handledAcademicInfoRequestToken ->
+                currentPage = AcademicSubPage.ACADEMIC_INFO
+            openTasksRequestToken > handledTaskRequestToken ->
+                currentPage = AcademicSubPage.TASKS
         }
+        handledTaskRequestToken = openTasksRequestToken
+        handledAcademicInfoRequestToken = openAcademicInfoRequestToken
     }
 
     var portalLoginCompleted by remember {
@@ -389,6 +403,16 @@ fun AcademicPage(
         }
 
 
+        AcademicSubPage.ACADEMIC_INFO -> {
+            AcademicInfoPage(
+                onBack = {
+                    currentPage = AcademicSubPage.HOME
+                }
+            )
+            return
+        }
+
+
         AcademicSubPage.TASKS -> {
             val semester = activeSemester
             if (semester == null) {
@@ -549,6 +573,19 @@ fun AcademicPage(
             onClick = if (activeSemester != null) {
                 { currentPage = AcademicSubPage.WEEK_INSIGHTS }
             } else null
+        )
+
+        Spacer(
+            modifier = Modifier.height(14.dp)
+        )
+
+        AcademicFeatureCard(
+            title = "考试与成绩",
+            subtitle = "查询成绩、考试安排与学业趋势",
+            onClick = {
+                currentPage =
+                    AcademicSubPage.ACADEMIC_INFO
+            }
         )
 
         Spacer(

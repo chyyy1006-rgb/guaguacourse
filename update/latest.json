@@ -1,15 +1,15 @@
 {
-  "versionCode": 9,
-  "versionName": "4.9.4",
-  "title": "瓜瓜课程表 4.9.4",
-  "publishedAt": "2026-08-10",
+  "versionCode": 14,
+  "versionName": "5.1.0",
+  "title": "瓜瓜课程表 5.1.0",
+  "publishedAt": "2026-08-13",
   "forceUpdate": false,
   "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/latest",
   "changelog": [
-    "意见反馈使用国内可访问的腾讯问卷",
-    "腾讯问卷的文件上传题现在可调用 Android 系统文件选择器",
-    "App、Android 系统和设备型号支持分别复制，也可一键复制全部",
-    "反馈页面继续在 App 内打开，无需调用邮件客户端",
-    "保留加载进度、重新加载和浏览器备用入口"
+    "优化考试与成绩页面布局，提醒与导出设置改为弹窗，不再占用成绩列表空间",
+    "学业分析支持导出包含 GPA 趋势曲线与学期概览的专属图片",
+    "精简考试与成绩页面文案，移除面向用户的内部实现说明",
+    "保留成绩、考试图片分享与保存相册，以及考试提醒和新成绩通知",
+    "版本升级至 5.1.0"
   ]
 }
