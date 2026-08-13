@@ -890,9 +890,6 @@ fun NpuCourseApp(
     startupUpdateInfo?.let { info ->
         UpdatePromptDialog(
             info = info,
-            onUpdate = {
-                AppUpdateManager.openDownloadPage(context, info.downloadUrl)
-            },
             onDismiss = {
                 startupUpdateInfo = null
             }

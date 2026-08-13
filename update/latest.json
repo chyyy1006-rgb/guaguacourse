@@ -1,15 +1,14 @@
 {
-  "versionCode": 14,
-  "versionName": "5.1.0",
-  "title": "瓜瓜课程表 5.1.0",
-  "publishedAt": "2026-08-13",
+  "versionCode": 15,
+  "versionName": "5.1.1",
+  "title": "瓜瓜课程表 5.1.1",
+  "publishedAt": "2026-08-14",
   "forceUpdate": false,
-  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/latest",
+  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.1.1/GuaguaCourse-5.1.1.apk",
   "changelog": [
-    "优化考试与成绩页面布局，提醒与导出设置改为弹窗，不再占用成绩列表空间",
-    "学业分析支持导出包含 GPA 趋势曲线与学期概览的专属图片",
-    "精简考试与成绩页面文案，移除面向用户的内部实现说明",
-    "保留成绩、考试图片分享与保存相册，以及考试提醒和新成绩通知",
-    "版本升级至 5.1.0"
+    "新增应用内直接下载新版 APK 的更新方式",
+    "下载完成后自动打开 Android 系统安装界面",
+    "增加 APK 包名、版本号与签名校验",
+    "下载失败时保留前往发布页的备用入口"
   ]
 }
