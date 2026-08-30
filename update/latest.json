@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "versionCode": 16,
   "versionName": "5.2.0",
   "title": "瓜瓜课程表 5.2.0",
@@ -13,18 +12,5 @@
     "电费余额或剩余电量不高于 5 时发送充值提醒",
     "复用统一身份认证会话，并优化校园拼车详情弹层的高度和滚动",
     "支持应用内下载更新，并校验 APK 包名、版本号、签名和 SHA-256"
-=======
-  "versionCode": 15,
-  "versionName": "5.1.1",
-  "title": "瓜瓜课程表 5.1.1",
-  "publishedAt": "2026-08-14",
-  "forceUpdate": false,
-  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.1.1/GuaguaCourse-5.1.1.apk",
-  "changelog": [
-    "新增应用内直接下载新版 APK 的更新方式",
-    "下载完成后自动打开 Android 系统安装界面",
-    "增加 APK 包名、版本号与签名校验",
-    "下载失败时保留前往发布页的备用入口"
->>>>>>> b06276c4457022d0cd4a8f5f1f4285f676be5e8e
   ]
 }
