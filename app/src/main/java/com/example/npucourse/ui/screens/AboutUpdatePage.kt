@@ -138,7 +138,7 @@ fun AboutUpdatePage(
 
         AboutActionCard(
             title = "GitHub 发布页",
-            subtitle = "查看版本说明与下载正式 APK",
+            subtitle = "查看版本说明与备用下载入口",
             onClick = {
                 AppUpdateManager.openDownloadPage(context, AppUpdateManager.RELEASES_URL)
             }
@@ -161,7 +161,7 @@ fun AboutUpdatePage(
                 )
                 Spacer(Modifier.height(7.dp))
                 Text(
-                    text = "瓜瓜课程表会在启动后定期检查官方 GitHub 版本清单。发现新版时会提示你前往官方发布页，安装仍由 Android 系统确认，不会静默替换应用。",
+                    text = "发现新版本后可直接在应用内下载更新包，下载完成后会打开 Android 系统安装界面，由你确认后完成升级。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp
                 )
@@ -174,9 +174,6 @@ fun AboutUpdatePage(
     updateInfo?.let { info ->
         UpdatePromptDialog(
             info = info,
-            onUpdate = {
-                AppUpdateManager.openDownloadPage(context, info.downloadUrl)
-            },
             onDismiss = { updateInfo = null }
         )
     }

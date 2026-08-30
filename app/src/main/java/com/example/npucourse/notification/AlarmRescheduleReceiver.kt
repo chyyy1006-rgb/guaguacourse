@@ -123,6 +123,7 @@ class AlarmRescheduleReceiver :
                     applicationContext,
                     academicPreferences.backgroundSyncEnabled
                 )
+                CampusAutoSyncScheduler.schedule(applicationContext)
                 AcademicOverviewWidgetUpdater.updateAll(applicationContext)
 
             } finally {

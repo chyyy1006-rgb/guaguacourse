@@ -1,15 +1,16 @@
 {
-  "versionCode": 14,
-  "versionName": "5.1.0",
-  "title": "瓜瓜课程表 5.1.0",
-  "publishedAt": "2026-08-13",
+  "versionCode": 16,
+  "versionName": "5.2.0",
+  "title": "瓜瓜课程表 5.2.0",
+  "publishedAt": "2026-08-30",
   "forceUpdate": false,
-  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/latest",
+  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.2.0/GuaguaCourse-5.2.0.apk",
+  "sha256": "f95f2d7f318b2f535503c15bb51824bc52d1ad8a50624226ed6e4d0025ac8c4e",
   "changelog": [
-    "优化考试与成绩页面布局，提醒与导出设置改为弹窗，不再占用成绩列表空间",
-    "学业分析支持导出包含 GPA 趋势曲线与学期概览的专属图片",
-    "精简考试与成绩页面文案，移除面向用户的内部实现说明",
-    "保留成绩、考试图片分享与保存相册，以及考试提醒和新成绩通知",
-    "版本升级至 5.1.0"
+    "底部导航新增“服务”，集中提供宿舍电费、校园网费和校园拼车入口",
+    "新增课程表每日自动刷新与电费余额每半小时自动刷新",
+    "电费余额或剩余电量不高于 5 时发送充值提醒",
+    "复用统一身份认证会话，并优化校园拼车详情弹层的高度和滚动",
+    "支持应用内下载更新，并校验 APK 包名、版本号、签名和 SHA-256"
   ]
 }

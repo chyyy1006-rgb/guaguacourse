@@ -53,12 +53,14 @@ import com.example.npucourse.data.academic.AcademicCacheStore
 import com.example.npucourse.launcher.LauncherIconManager
 import com.example.npucourse.notification.AcademicNotificationHelper
 import com.example.npucourse.notification.AcademicSyncScheduler
+import com.example.npucourse.notification.CampusAutoSyncScheduler
 import com.example.npucourse.notification.CourseAlarmScheduler
 import com.example.npucourse.notification.NotificationHelper
 import com.example.npucourse.notification.TaskAlarmScheduler
 import com.example.npucourse.notification.ReminderPermissionManager
 import com.example.npucourse.ui.components.ReminderPermissionDialog
 import com.example.npucourse.ui.screens.AcademicPage
+import com.example.npucourse.ui.screens.CampusServicesPage
 import com.example.npucourse.ui.screens.MinePage
 import com.example.npucourse.ui.screens.TimetablePage
 import com.example.npucourse.ui.screens.TodayPage
@@ -82,6 +84,7 @@ class MainActivity :
 
     private var taskNavigationRequestToken by mutableIntStateOf(0)
     private var academicInfoNavigationRequestToken by mutableIntStateOf(0)
+    private var campusServicesNavigationRequestToken by mutableIntStateOf(0)
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -96,6 +99,10 @@ class MainActivity :
         if (intent?.getBooleanExtra("open_academic_info", false) == true) {
             academicInfoNavigationRequestToken++
             intent?.removeExtra("open_academic_info")
+        }
+        if (intent?.getBooleanExtra("open_campus_services", false) == true) {
+            campusServicesNavigationRequestToken++
+            intent?.removeExtra("open_campus_services")
         }
 
         enableEdgeToEdge()
@@ -128,7 +135,8 @@ class MainActivity :
                     NpuCourseApp(
                         settingsViewModel = settingsViewModel,
                         taskNavigationRequestToken = taskNavigationRequestToken,
-                        academicInfoNavigationRequestToken = academicInfoNavigationRequestToken
+                        academicInfoNavigationRequestToken = academicInfoNavigationRequestToken,
+                        campusServicesNavigationRequestToken = campusServicesNavigationRequestToken
                     )
                 }
             }
@@ -146,6 +154,10 @@ class MainActivity :
             academicInfoNavigationRequestToken++
             intent.removeExtra("open_academic_info")
         }
+        if (intent.getBooleanExtra("open_campus_services", false)) {
+            campusServicesNavigationRequestToken++
+            intent.removeExtra("open_campus_services")
+        }
     }
 }
 
@@ -154,7 +166,8 @@ class MainActivity :
 fun NpuCourseApp(
     settingsViewModel: SettingsViewModel,
     taskNavigationRequestToken: Int = 0,
-    academicInfoNavigationRequestToken: Int = 0
+    academicInfoNavigationRequestToken: Int = 0,
+    campusServicesNavigationRequestToken: Int = 0
 ) {
 
     val context =
@@ -206,14 +219,29 @@ fun NpuCourseApp(
             .collectAsState()
 
     var selectedTab by rememberSaveable {
-        mutableStateOf(if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) "学业" else "今天")
+        mutableStateOf(
+            when {
+                campusServicesNavigationRequestToken > 0 -> "服务"
+                taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0 -> "学业"
+                else -> "今天"
+            }
+        )
+    }
+    var serviceWebPageOpen by rememberSaveable {
+        mutableStateOf(false)
     }
     var internalAcademicInfoRequestToken by remember {
         mutableIntStateOf(academicInfoNavigationRequestToken)
     }
 
-    LaunchedEffect(taskNavigationRequestToken, academicInfoNavigationRequestToken) {
-        if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) {
+    LaunchedEffect(
+        taskNavigationRequestToken,
+        academicInfoNavigationRequestToken,
+        campusServicesNavigationRequestToken
+    ) {
+        if (campusServicesNavigationRequestToken > 0) {
+            selectedTab = "服务"
+        } else if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) {
             selectedTab = "学业"
         }
         if (academicInfoNavigationRequestToken > internalAcademicInfoRequestToken) {
@@ -421,6 +449,7 @@ fun NpuCourseApp(
             context,
             com.example.npucourse.data.academic.AcademicPreferencesStore.get(context).backgroundSyncEnabled
         )
+        CampusAutoSyncScheduler.schedule(context)
 
         withContext(Dispatchers.IO) {
             AppDatabase.getInstance(context)
@@ -638,6 +667,12 @@ fun NpuCourseApp(
                         AcademicPage(
                             openTasksRequestToken = taskNavigationRequestToken,
                             openAcademicInfoRequestToken = internalAcademicInfoRequestToken
+                        )
+                    }
+
+                    "服务" -> {
+                        CampusServicesPage(
+                            onWebPageVisibilityChanged = { serviceWebPageOpen = it }
                         )
                     }
 
@@ -873,26 +908,25 @@ fun NpuCourseApp(
                 )
             }
 
-            BottomNavigationBar(
-                selectedTab = selectedTab,
-                onTabSelected = {
-                    selectedTab = it
-                }
-            )
+            if (selectedTab != "服务" || !serviceWebPageOpen) {
+                BottomNavigationBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = {
+                        selectedTab = it
+                    }
+                )
 
-            Spacer(
-                modifier =
-                    Modifier.height(10.dp)
-            )
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
+            }
         }
     }
 
     startupUpdateInfo?.let { info ->
         UpdatePromptDialog(
             info = info,
-            onUpdate = {
-                AppUpdateManager.openDownloadPage(context, info.downloadUrl)
-            },
             onDismiss = {
                 startupUpdateInfo = null
             }
@@ -959,6 +993,7 @@ private fun BottomNavigationBar(
                 "今天",
                 "课表",
                 "学业",
+                "服务",
                 "我的"
             ).forEach {
                 tab ->

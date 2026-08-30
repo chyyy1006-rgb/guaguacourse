@@ -130,6 +130,61 @@ class CourseRepository(
         }
     }
 
+    /**
+     * 后台安全同步：只管理已经识别为教务来源的课程，不触碰其他本地课程。
+     * 首次运行会优先复用完全匹配的现有条目，避免产生重复课程。
+     */
+    suspend fun syncSemesterCoursesInBackground(
+        semesterId: Long,
+        courses: List<DemoCourse>,
+        trackedCourseIds: Set<Long>
+    ): Set<Long> {
+        if (semesterId <= 0L || courses.isEmpty()) return trackedCourseIds
+
+        return database.withTransaction {
+            val existing = dao.getCoursesForSemester(semesterId)
+            val trackedExisting = existing.filter { it.id in trackedCourseIds }
+            val candidates = if (trackedExisting.isNotEmpty()) trackedExisting else existing
+            val unused = candidates.toMutableList()
+            val newTrackedIds = mutableSetOf<Long>()
+
+            courses.forEach { incomingCourse ->
+                val incoming = incomingCourse.copy(semesterId = semesterId).toEntityForInsert()
+                val exact = unused.firstOrNull { it.backgroundSignature() == incoming.backgroundSignature() }
+                val sameCourse = exact ?: unused.firstOrNull {
+                    it.name.trim().equals(incoming.name.trim(), ignoreCase = true) &&
+                        it.teacher.trim().equals(incoming.teacher.trim(), ignoreCase = true)
+                }
+
+                if (sameCourse != null) {
+                    unused.remove(sameCourse)
+                    dao.updateCourse(
+                        incoming.copy(
+                            id = sameCourse.id,
+                            colorArgb = sameCourse.colorArgb,
+                            notes = sameCourse.notes,
+                            reminderEnabled = sameCourse.reminderEnabled,
+                            reminderMinutesOverride = sameCourse.reminderMinutesOverride
+                        )
+                    )
+                    newTrackedIds += sameCourse.id
+                } else {
+                    val insertedId = dao.insertCourse(incoming)
+                    if (insertedId > 0L) newTrackedIds += insertedId
+                }
+            }
+
+            if (trackedExisting.isNotEmpty()) {
+                unused.filter { it.id in trackedCourseIds }.forEach { stale ->
+                    taskDao.clearCourseLink(stale.id, System.currentTimeMillis())
+                    dao.deleteCourseById(stale.id)
+                }
+            }
+
+            newTrackedIds
+        }
+    }
+
 
     /*
      * =====================================================
@@ -401,3 +456,17 @@ private fun DemoCourse.toEntity():
         reminderMinutesOverride = reminderMinutesOverride
     )
 }
+
+private fun CourseEntity.backgroundSignature(): String =
+    listOf(
+        name.trim().lowercase(),
+        teacher.trim().lowercase(),
+        room.trim().lowercase(),
+        day.toString(),
+        startSection.toString(),
+        endSection.toString(),
+        startWeek.toString(),
+        endWeek.toString(),
+        weekMode,
+        customWeeks
+    ).joinToString("|")

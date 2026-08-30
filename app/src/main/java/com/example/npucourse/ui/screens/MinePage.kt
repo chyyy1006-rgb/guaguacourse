@@ -477,7 +477,6 @@ fun MinePage(
         )
 
         SettingGroup {
-
             SettingRow(
                 title = "导出与分享",
                 subtitle = "课表图片 · ICS 日历",
@@ -539,7 +538,7 @@ fun MinePage(
 
             SettingRow(
                 title = "关于与更新",
-                subtitle = "版本信息 · 检查更新 · GitHub 发布页",
+                subtitle = "版本信息 · 检查更新 · 应用内升级",
                 onClick = { showAboutUpdate = true }
             )
         }

@@ -38,11 +38,26 @@
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- 后台刷新课程表与电费时运行短时前台数据同步服务。 -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK" />
+
 
     <!-- Android 9 及以下保存导出图片到系统相册。 -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+
+
+    <!-- GitHub 自托管 APK 更新：下载完成后交由 Android 系统安装器确认。 -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
 
     <application
@@ -221,6 +236,18 @@
             android:name=".notification.AcademicSyncReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <!-- 每 30 分钟左右检查一次校园服务刷新任务。 -->
+        <receiver
+            android:name=".notification.CampusAutoSyncReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <service
+            android:name=".notification.CampusAutoSyncService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!--
             重启 / 修改系统时间后重建提醒。
