@@ -4,7 +4,7 @@
   "title": "瓜瓜课程表 5.2.0",
   "publishedAt": "2026-08-30",
   "forceUpdate": false,
-  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.2.0/GuaguaCourse-5.2.0.apk",
+  "downloadUrl": "https://raw.githubusercontent.com/chyyy1006-rgb/guaguacourse/v5.2.0/app/release/app-release.apk",
   "sha256": "f95f2d7f318b2f535503c15bb51824bc52d1ad8a50624226ed6e4d0025ac8c4e",
   "changelog": [
     "底部导航新增“服务”，集中提供宿舍电费、校园网费和校园拼车入口",
