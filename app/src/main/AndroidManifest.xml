@@ -60,6 +60,17 @@
         android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
 
+    <!-- Android 9 及以下保存导出图片到系统相册。 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+
+    <!-- GitHub 自托管 APK 更新：下载完成后交由 Android 系统安装器确认。 -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+
     <application
 
         android:allowBackup="true"
@@ -237,6 +248,7 @@
             android:enabled="true"
             android:exported="false" />
 
+<<<<<<< HEAD
         <!-- 每 30 分钟左右检查一次校园服务刷新任务。 -->
         <receiver
             android:name=".notification.CampusAutoSyncReceiver"
@@ -249,6 +261,8 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+=======
+>>>>>>> b06276c4457022d0cd4a8f5f1f4285f676be5e8e
         <!--
             重启 / 修改系统时间后重建提醒。
         -->

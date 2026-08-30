@@ -22,9 +22,15 @@ android {
 
         targetSdk = 36
 
+<<<<<<< HEAD
         versionCode = 16
 
         versionName = "5.2.0"
+=======
+        versionCode = 15
+
+        versionName = "5.1.1"
+>>>>>>> b06276c4457022d0cd4a8f5f1f4285f676be5e8e
 
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
