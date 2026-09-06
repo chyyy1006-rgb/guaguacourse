@@ -45,6 +45,10 @@
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- 用户主动启用的跨应用快捷悬浮窗。 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <uses-permission
         android:name="android.permission.WAKE_LOCK" />
 
@@ -58,6 +62,14 @@
     <!-- GitHub 自托管 APK 更新：下载完成后交由 Android 系统安装器确认。 -->
     <uses-permission
         android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Android 11+ 只查询具备桌面启动入口的应用，用于目标 App 选择器。 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
 
     <application
@@ -248,6 +260,17 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".overlay.QuickOverlayService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled shortcut overlay with an always-visible touch target" />
+        </service>
 
         <!--
             重启 / 修改系统时间后重建提醒。

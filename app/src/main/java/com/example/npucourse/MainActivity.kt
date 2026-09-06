@@ -12,20 +12,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -41,11 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.npucourse.data.AppDatabase
@@ -59,6 +46,7 @@ import com.example.npucourse.notification.NotificationHelper
 import com.example.npucourse.notification.TaskAlarmScheduler
 import com.example.npucourse.notification.ReminderPermissionManager
 import com.example.npucourse.ui.components.ReminderPermissionDialog
+import com.example.npucourse.ui.components.LiquidGlassBottomBar
 import com.example.npucourse.ui.screens.AcademicPage
 import com.example.npucourse.ui.screens.CampusServicesPage
 import com.example.npucourse.ui.screens.MinePage
@@ -160,7 +148,6 @@ class MainActivity :
         }
     }
 }
-
 
 @Composable
 fun NpuCourseApp(
@@ -909,16 +896,12 @@ fun NpuCourseApp(
             }
 
             if (selectedTab != "服务" || !serviceWebPageOpen) {
-                BottomNavigationBar(
-                    selectedTab = selectedTab,
-                    onTabSelected = {
+                LiquidGlassBottomBar(
+                    items = listOf("今天", "课表", "学业", "服务", "我的"),
+                    selectedItem = selectedTab,
+                    onItemSelected = {
                         selectedTab = it
                     }
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
                 )
             }
         }
@@ -950,122 +933,3 @@ private fun EmptySemesterPage() {
     }
 }
 
-
-@Composable
-private fun BottomNavigationBar(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit
-) {
-
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 18.dp
-                ),
-        shape =
-            RoundedCornerShape(26.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surface
-            ),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 3.dp
-            )
-    ) {
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = 7.dp,
-                        vertical = 7.dp
-                    ),
-            horizontalArrangement =
-                Arrangement.spacedBy(4.dp)
-        ) {
-
-            listOf(
-                "今天",
-                "课表",
-                "学业",
-                "服务",
-                "我的"
-            ).forEach {
-                tab ->
-
-                BottomNavigationItem(
-                    modifier =
-                        Modifier.weight(1f),
-                    text =
-                        tab,
-                    selected =
-                        selectedTab == tab,
-                    onClick = {
-                        onTabSelected(
-                            tab
-                        )
-                    }
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun BottomNavigationItem(
-    modifier: Modifier = Modifier,
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-
-    Box(
-        modifier =
-            modifier
-                .background(
-                    color =
-                        if (selected) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            Color.Transparent
-                        },
-                    shape =
-                        RoundedCornerShape(18.dp)
-                )
-                .clickable(
-                    onClick =
-                        onClick
-                )
-                .padding(
-                    vertical = 9.dp
-                ),
-        contentAlignment =
-            Alignment.Center
-    ) {
-
-        Text(
-            text =
-                text,
-            fontSize =
-                14.sp,
-            fontWeight =
-                if (selected) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Medium
-                },
-            color =
-                if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-        )
-    }
-}

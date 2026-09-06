@@ -1,7 +1,9 @@
 package com.example.npucourse.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -58,6 +61,8 @@ import com.example.npucourse.model.parseCustomWeeks
 import com.example.npucourse.model.weekDisplayText
 import com.example.npucourse.data.settings.CourseCardStyle
 import com.example.npucourse.data.settings.UiDensity
+import com.example.npucourse.ui.timetable.JellyCourseColors
+import com.example.npucourse.ui.timetable.resolveJellyCourseColors
 import com.example.npucourse.util.MAX_SEMESTER_WEEKS
 import com.example.npucourse.util.campusDisplayName
 import com.example.npucourse.util.getMaxSection
@@ -922,6 +927,11 @@ private fun WeekSchedule(
             )
         }
 
+    val darkTheme = isSystemInDarkTheme()
+    val jellyColors = remember(visibleCourses, darkTheme) {
+        resolveJellyCourseColors(visibleCourses, darkTheme)
+    }
+
 
     val verticalScroll =
         rememberScrollState()
@@ -1158,6 +1168,8 @@ private fun WeekSchedule(
 
                     courses =
                         visibleCourses,
+
+                    jellyColors = jellyColors,
 
                     maxSection =
                         maxSection,
@@ -1442,6 +1454,7 @@ private fun SectionColumn(
 private fun DayColumn(
     day: Int,
     courses: List<DemoCourse>,
+    jellyColors: Map<Long, JellyCourseColors>,
     maxSection: Int,
     sectionHeight: Dp,
     courseCardStyle: String,
@@ -1501,6 +1514,13 @@ private fun DayColumn(
                     course =
                         course,
 
+                    colors = jellyColors[course.id] ?: JellyCourseColors(
+                        background = course.color.copy(alpha = 0.30f),
+                        accent = course.color,
+                        title = MaterialTheme.colorScheme.onSurface,
+                        secondary = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+
                     height =
                         sectionHeight * span,
 
@@ -1558,6 +1578,7 @@ private fun DayColumn(
 @Composable
 private fun CourseBlock(
     course: DemoCourse,
+    colors: JellyCourseColors,
     height: Dp,
     courseCardStyle: String,
     onClick: () -> Unit
@@ -1579,20 +1600,20 @@ private fun CourseBlock(
 
         shape =
             RoundedCornerShape(
-                6.dp
+                13.dp
             ),
 
         colors =
             CardDefaults.cardColors(
                 containerColor =
-                    course.color.copy(
-                        alpha = 0.18f
-                    )
+                    colors.background.copy(alpha = 0.96f)
             ),
+
+        border = BorderStroke(0.8.dp, colors.accent.copy(alpha = 0.72f)),
 
         elevation =
             CardDefaults.cardElevation(
-                defaultElevation = 0.dp
+                defaultElevation = 1.dp
             )
     ) {
 
@@ -1601,6 +1622,13 @@ private fun CourseBlock(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            0f to Color.White.copy(alpha = 0.24f),
+                            0.24f to Color.Transparent,
+                            1f to colors.accent.copy(alpha = 0.055f)
+                        )
+                    )
                     .padding(
                         4.dp
                     )
@@ -1617,8 +1645,8 @@ private fun CourseBlock(
                 fontWeight =
                     FontWeight.Bold,
 
-                color =
-                    MaterialTheme.colorScheme.onSurface,
+                    color =
+                    colors.title,
 
                 maxLines =
                     4,
@@ -1644,7 +1672,7 @@ private fun CourseBlock(
                         7.sp,
 
                     color =
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    colors.secondary,
 
                     maxLines =
                         if (courseCardStyle == CourseCardStyle.DETAILED) 2 else 3,
@@ -1666,7 +1694,7 @@ private fun CourseBlock(
                 Text(
                     text = course.teacher,
                     fontSize = 7.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = colors.secondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

@@ -110,6 +110,10 @@ fun MinePage(
         mutableStateOf(false)
     }
 
+    var showQuickOverlaySettings by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var showAboutUpdate by rememberSaveable {
         mutableStateOf(false)
     }
@@ -225,6 +229,13 @@ fun MinePage(
     if (showWidgetSettings) {
         WidgetSettingsPage(
             onBack = { showWidgetSettings = false }
+        )
+        return
+    }
+
+    if (showQuickOverlaySettings) {
+        QuickOverlaySettingsPage(
+            onBack = { showQuickOverlaySettings = false }
         )
         return
     }
@@ -489,6 +500,14 @@ fun MinePage(
                 title = "桌面小组件",
                 subtitle = "今日课程 · 下一节课",
                 onClick = { showWidgetSettings = true }
+            )
+
+            GroupDivider()
+
+            SettingRow(
+                title = "快捷悬浮窗",
+                subtitle = "双击启动 · 长按拖动 · 防误触",
+                onClick = { showQuickOverlaySettings = true }
             )
 
             GroupDivider()
