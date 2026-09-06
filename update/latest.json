@@ -1,16 +1,15 @@
 {
-  "versionCode": 16,
-  "versionName": "5.2.0",
-  "title": "瓜瓜课程表 5.2.0",
-  "publishedAt": "2026-08-30",
+  "versionCode": 17,
+  "versionName": "5.2.1",
+  "title": "瓜瓜课程表 5.2.1",
+  "publishedAt": "2026-09-07",
   "forceUpdate": false,
-  "downloadUrl": "https://raw.githubusercontent.com/chyyy1006-rgb/guaguacourse/v5.2.0/app/release/app-release.apk",
-  "sha256": "f95f2d7f318b2f535503c15bb51824bc52d1ad8a50624226ed6e4d0025ac8c4e",
+  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.2.1/NPUCourse-v5.2.1.apk",
+  "sha256": "这里填写新APK的SHA-256",
   "changelog": [
-    "底部导航新增“服务”，集中提供宿舍电费、校园网费和校园拼车入口",
-    "新增课程表每日自动刷新与电费余额每半小时自动刷新",
-    "电费余额或剩余电量不高于 5 时发送充值提醒",
-    "复用统一身份认证会话，并优化校园拼车详情弹层的高度和滚动",
-    "支持应用内下载更新，并校验 APK 包名、版本号、签名和 SHA-256"
+    "新增液态玻璃风格底部导航栏",
+    "新增课程快捷悬浮窗",
+    "优化课程颜色显示",
+    "修复导航栏点击时出现灰色阴影的问题"
   ]
 }
