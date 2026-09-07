@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
@@ -71,7 +72,7 @@ class QuickOverlayService : Service() {
             return START_NOT_STICKY
         }
         val config = QuickOverlayPreferences.load(this)
-        if (!config.enabled || config.temporarilyHidden || config.targetPackage.isBlank() || !Settings.canDrawOverlays(this)) {
+        if (!config.enabled || config.temporarilyHidden || !config.hasConfiguredAction || !Settings.canDrawOverlays(this)) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -119,7 +120,8 @@ class QuickOverlayService : Service() {
         params = layout
         clamp(layout)
 
-        val icon = runCatching { packageManager.getApplicationIcon(config.targetPackage) }.getOrNull()
+        val icon = config.primaryAction?.packageName
+            ?.let { runCatching { packageManager.getApplicationIcon(it) }.getOrNull() }
         val view = GlassOverlayView(this, icon, config) { event -> handleGesture(event, config) }
         overlayView = view
         windowManager.addView(view, layout)
@@ -138,12 +140,14 @@ class QuickOverlayService : Service() {
                 if (config.snapToEdge) snapToNearestEdge()
                 else persistPosition()
             }
-            OverlayEvent.Trigger -> launchTarget(config.targetPackage)
+            is OverlayEvent.Trigger -> config.actionFor(event.gesture)?.let(::launchTarget)
         }
     }
 
-    private fun launchTarget(packageName: String) {
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+    private fun launchTarget(action: GestureAction) {
+        val launchIntent = action.activityName?.let {
+            Intent(Intent.ACTION_MAIN).setComponent(ComponentName(action.packageName, it))
+        } ?: packageManager.getLaunchIntentForPackage(action.packageName)
         if (launchIntent == null) {
             overlayView?.showUnavailable()
             return
@@ -216,7 +220,7 @@ class QuickOverlayService : Service() {
 
         fun refresh(context: Context) {
             val config = QuickOverlayPreferences.load(context)
-            if (!config.enabled || config.temporarilyHidden || config.targetPackage.isBlank() || !Settings.canDrawOverlays(context)) {
+            if (!config.enabled || config.temporarilyHidden || !config.hasConfiguredAction || !Settings.canDrawOverlays(context)) {
                 stop(context)
                 return
             }
@@ -232,7 +236,7 @@ class QuickOverlayService : Service() {
 private sealed interface OverlayEvent {
     data class Move(val x: Int, val y: Int) : OverlayEvent
     data object Release : OverlayEvent
-    data object Trigger : OverlayEvent
+    data class Trigger(val gesture: String) : OverlayEvent
 }
 
 private enum class TouchState { Idle, Pressed, WaitingSecondTap, Dragging, GestureCandidate, Triggered, Cooldown }
@@ -274,7 +278,7 @@ private class GlassOverlayView(
     private val longPress = Runnable {
         if (state == TouchState.Pressed && !config.lockPosition) {
             state = TouchState.Dragging
-            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            if (config.hapticFeedback) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             animate().scaleX(1.06f).scaleY(1.06f).setDuration(100).start()
         }
     }
@@ -282,7 +286,7 @@ private class GlassOverlayView(
     init {
         alpha = config.opacity
         isClickable = true
-        contentDescription = "${OverlayGesture.label(config.gesture)}打开${config.targetLabel}，长按拖动"
+        contentDescription = "双击或四向滑动打开已绑定应用，长按拖动"
         elevation = resources.displayMetrics.density * 7f
     }
 
@@ -372,10 +376,10 @@ private class GlassOverlayView(
                 val distance = hypot(dx, dy)
                 when (state) {
                     TouchState.Dragging -> callback(OverlayEvent.Release)
-                    TouchState.GestureCandidate -> if (matchesSwipe(dx, dy, distance)) trigger()
+                    TouchState.GestureCandidate -> detectSwipe(dx, dy, distance)?.let(::trigger)
                     TouchState.Pressed -> {
-                        if (config.gesture == OverlayGesture.DOUBLE_TAP && secondTapCandidate && distance <= touchSlop) {
-                            trigger()
+                        if (secondTapCandidate && distance <= touchSlop) {
+                            trigger(OverlayGesture.DOUBLE_TAP)
                             lastTapTime = 0L
                         } else if (distance <= touchSlop) {
                             performClick()
@@ -404,34 +408,28 @@ private class GlassOverlayView(
         return true
     }
 
-    private fun matchesSwipe(dx: Float, dy: Float, distance: Float): Boolean {
-        if (config.gesture == OverlayGesture.DOUBLE_TAP || distance < width * 0.78f) return false
+    private fun detectSwipe(dx: Float, dy: Float, distance: Float): String? {
+        val minDistance = maxOf(width * 0.78f, touchSlop * 3f)
         val vx = velocityTracker?.xVelocity ?: 0f
         val vy = velocityTracker?.yVelocity ?: 0f
-        val speedEnough = hypot(vx, vy) >= 360f || distance >= width * 1.15f
-        if (!speedEnough) return false
-        return when (config.gesture) {
-            OverlayGesture.SWIPE_LEFT -> dx < 0 && abs(dx) > abs(dy) * 1.45f
-            OverlayGesture.SWIPE_RIGHT -> dx > 0 && abs(dx) > abs(dy) * 1.45f
-            OverlayGesture.SWIPE_UP -> dy < 0 && abs(dy) > abs(dx) * 1.45f
-            OverlayGesture.SWIPE_DOWN -> dy > 0 && abs(dy) > abs(dx) * 1.45f
-            else -> false
-        }
+        return OverlayGestureClassifier.detect(dx, dy, distance, minDistance, hypot(vx, vy), 360f)
     }
 
-    private fun trigger() {
+    private fun trigger(gesture: String) {
         val now = SystemClock.uptimeMillis()
-        if (now < cooldownUntil) return
+        if (now < cooldownUntil || config.actionFor(gesture) == null) return
         state = TouchState.Triggered
         cooldownUntil = now + 1350L
-        performHapticFeedback(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM
-            else HapticFeedbackConstants.KEYBOARD_TAP
-        )
+        if (config.hapticFeedback) {
+            performHapticFeedback(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM
+                else HapticFeedbackConstants.KEYBOARD_TAP
+            )
+        }
         animate().scaleX(1.10f).scaleY(1.10f).setDuration(90).withEndAction {
             animate().scaleX(1f).scaleY(1f).setDuration(130).start()
         }.start()
-        callback(OverlayEvent.Trigger)
+        callback(OverlayEvent.Trigger(gesture))
         state = TouchState.Cooldown
     }
 

@@ -22,6 +22,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import com.example.npucourse.util.CampusType
 import com.example.npucourse.util.campusDisplayName
 import com.example.npucourse.util.formatSemesterDate
 import com.example.npucourse.util.isYouYiSummerTime
+import com.example.npucourse.ui.components.LiquidGlassCard
 import java.util.Calendar
 
 
@@ -76,7 +78,9 @@ fun MinePage(
     onUiDensityChange: (String) -> Unit,
     onAppIconStyleChange: (String) -> Unit,
     onCourseCardStyleChange: (String) -> Unit,
-    onShowSectionTimesChange: (Boolean) -> Unit
+    onShowSectionTimesChange: (Boolean) -> Unit,
+    externalDestination: String? = null,
+    onExternalDestinationConsumed: () -> Unit = {}
 ) {
 
     val context =
@@ -120,6 +124,17 @@ fun MinePage(
 
     var showFeedback by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    LaunchedEffect(externalDestination) {
+        when (externalDestination) {
+            GlobalSearchDestination.OVERLAY -> showQuickOverlaySettings = true
+            GlobalSearchDestination.WIDGET -> showWidgetSettings = true
+            GlobalSearchDestination.BACKUP -> showDataManagement = true
+            GlobalSearchDestination.EXPORT -> showShareExport = true
+            GlobalSearchDestination.APPEARANCE -> showAppearanceSettings = true
+        }
+        if (externalDestination != null) onExternalDestinationConsumed()
     }
 
 
@@ -340,9 +355,7 @@ fun MinePage(
                 Modifier.height(24.dp)
         )
 
-        SectionTitle(
-            "课表"
-        )
+        SectionTitle("账户与校园")
 
         Spacer(
             modifier =
@@ -437,9 +450,7 @@ fun MinePage(
                 Modifier.height(24.dp)
         )
 
-        SectionTitle(
-            "课程"
-        )
+        SectionTitle("学习")
 
         Spacer(
             modifier =
@@ -478,9 +489,7 @@ fun MinePage(
                 Modifier.height(24.dp)
         )
 
-        SectionTitle(
-            "应用"
-        )
+        SectionTitle("个性化")
 
         Spacer(
             modifier =
@@ -488,14 +497,6 @@ fun MinePage(
         )
 
         SettingGroup {
-            SettingRow(
-                title = "导出与分享",
-                subtitle = "课表图片 · ICS 日历",
-                onClick = { showShareExport = true }
-            )
-
-            GroupDivider()
-
             SettingRow(
                 title = "桌面小组件",
                 subtitle = "今日课程 · 下一节课",
@@ -518,18 +519,15 @@ fun MinePage(
                 onClick = { showAppearanceSettings = true }
             )
 
-            GroupDivider()
+        }
 
-            SettingRow(
-                title =
-                    "数据管理",
-                subtitle =
-                    "完整备份 · 恢复",
-                onClick = {
-                    showDataManagement =
-                        true
-                }
-            )
+        Spacer(Modifier.height(24.dp))
+        SectionTitle("数据")
+        Spacer(Modifier.height(10.dp))
+        SettingGroup {
+            SettingRow("导入 / 导出", "课表图片 · ICS 日历", onClick = { showShareExport = true })
+            GroupDivider()
+            SettingRow("完整备份与恢复", "课程、待办与设置", onClick = { showDataManagement = true })
         }
 
         Spacer(
@@ -537,9 +535,7 @@ fun MinePage(
                 Modifier.height(24.dp)
         )
 
-        SectionTitle(
-            "支持与关于"
-        )
+        SectionTitle("App")
 
         Spacer(
             modifier =
@@ -564,7 +560,7 @@ fun MinePage(
 
         Spacer(
             modifier =
-                Modifier.height(44.dp)
+                Modifier.height(122.dp)
         )
     }
 
@@ -745,21 +741,7 @@ private fun SettingGroup(
     content: @Composable () -> Unit
 ) {
 
-    Card(
-        modifier =
-            Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(20.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surface
-            ),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 1.dp
-            )
-    ) {
+    LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
         content()
     }
 }

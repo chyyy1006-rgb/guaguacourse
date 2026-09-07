@@ -22,9 +22,9 @@ android {
 
         targetSdk = 36
 
-        versionCode = 17
+        versionCode = 18
 
-        versionName = "5.2.1"
+        versionName = "5.3.0"
 
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
@@ -109,6 +109,11 @@ dependencies {
 
     implementation(
         "androidx.compose.foundation:foundation"
+    )
+
+    // BottomBar 的局部背景磨砂：Android 12+ 使用 RenderEffect，旧系统自动降级为高对比度遮罩。
+    implementation(
+        "dev.chrisbanes.haze:haze:1.1.1"
     )
 
 

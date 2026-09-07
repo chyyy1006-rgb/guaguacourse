@@ -53,7 +53,7 @@ private data class CourseSyncPreview(
     val unchangedCount: Int,
     val localOnlyCount: Int,
     val appendOnlyCourses: List<DemoCourse>,
-    val smartMergedCourses: List<DemoCourse>
+    val synchronizedCourses: List<DemoCourse>
 )
 
 
@@ -97,7 +97,7 @@ fun CourseSyncPage(
     val actionCourses =
         when (strategy) {
             CourseSyncStrategy.SMART_MERGE ->
-                preview.smartMergedCourses
+                preview.synchronizedCourses
 
             CourseSyncStrategy.ADD_ONLY ->
                 preview.appendOnlyCourses
@@ -565,7 +565,7 @@ private fun SyncSummaryCard(
                 value = "$unchangedCount 条"
             )
             SummaryRow(
-                name = "仅本地存在",
+                name = "本次教务未返回",
                 value = "$localOnlyCount 条"
             )
             SummaryRow(
@@ -666,8 +666,8 @@ private fun StrategyExplanation(
     val text =
         when (strategy) {
             CourseSyncStrategy.SMART_MERGE ->
-                "更新同一时间段课程的教师、教室等变化，新增 $addedCount 条；" +
-                    "保留 $localOnlyCount 条仅本地存在的课程。"
+                "新增 $addedCount 条、更新教师和教室等变化，并移除本地存在但本次教务未返回的 " +
+                    "$localOnlyCount 条课程（包括已退课程）。课程颜色、备注和提醒设置会尽量保留。"
 
             CourseSyncStrategy.ADD_ONLY ->
                 "只添加完全不存在的课程，不修改现有课程。适合你只想补课，不想动本地编辑内容时使用。"
@@ -691,7 +691,7 @@ private fun StrategyExplanation(
         title =
             when (strategy) {
                 CourseSyncStrategy.SMART_MERGE ->
-                    "推荐：日常重新同步"
+                    "推荐：与教务课表同步"
 
                 CourseSyncStrategy.ADD_ONLY ->
                     "保守模式"
@@ -959,24 +959,13 @@ private fun buildSyncPreview(
                 existingSmartKeys
         }
 
-    val smartMergedCourses =
-        buildList {
-            addAll(
-                localOnlyCourses
-            )
-
-            addAll(
-                incomingCourses
-            )
-        }
-
     return CourseSyncPreview(
         addedCount = addedCount,
         updatedCount = updatedCount,
         unchangedCount = unchangedCount,
         localOnlyCount = localOnlyCourses.size,
         appendOnlyCourses = appendOnlyCourses,
-        smartMergedCourses = smartMergedCourses
+        synchronizedCourses = incomingCourses
     )
 }
 
@@ -1057,7 +1046,11 @@ private fun syncButtonText(
 ): String {
     return when (strategy) {
         CourseSyncStrategy.SMART_MERGE ->
-            "执行智能同步"
+            if (preview.localOnlyCount > 0) {
+                "同步并移除 ${preview.localOnlyCount} 条未返回课程"
+            } else {
+                "同步教务课表"
+            }
 
         CourseSyncStrategy.ADD_ONLY ->
             if (

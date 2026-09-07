@@ -17,6 +17,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -32,7 +38,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.npucourse.data.AppDatabase
@@ -52,6 +60,8 @@ import com.example.npucourse.ui.screens.CampusServicesPage
 import com.example.npucourse.ui.screens.MinePage
 import com.example.npucourse.ui.screens.TimetablePage
 import com.example.npucourse.ui.screens.TodayPage
+import com.example.npucourse.ui.screens.GlobalSearchDestination
+import com.example.npucourse.ui.screens.GlobalSearchPalette
 import com.example.npucourse.ui.theme.NPUcourseTheme
 import com.example.npucourse.update.AppUpdateInfo
 import com.example.npucourse.update.AppUpdateManager
@@ -65,6 +75,8 @@ import com.example.npucourse.viewmodel.SettingsViewModel
 import com.example.npucourse.viewmodel.TaskViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 
 class MainActivity :
@@ -217,6 +229,11 @@ fun NpuCourseApp(
     var serviceWebPageOpen by rememberSaveable {
         mutableStateOf(false)
     }
+    var academicFullScreenPageOpen by rememberSaveable { mutableStateOf(false) }
+    val bottomBarHazeState = remember { HazeState() }
+    var showGlobalSearch by rememberSaveable { mutableStateOf(false) }
+    var mineDestination by rememberSaveable { mutableStateOf<String?>(null) }
+    var internalTaskRequestToken by remember { mutableIntStateOf(taskNavigationRequestToken) }
     var internalAcademicInfoRequestToken by remember {
         mutableIntStateOf(academicInfoNavigationRequestToken)
     }
@@ -237,8 +254,12 @@ fun NpuCourseApp(
     }
 
     var cachedNextExam by remember { mutableStateOf(AcademicCacheStore.nextExam(context)) }
+    var cachedExams by remember { mutableStateOf(AcademicCacheStore.loadExams(context)?.result?.exams.orEmpty()) }
     LaunchedEffect(selectedTab) {
-        if (selectedTab == "今天") cachedNextExam = AcademicCacheStore.nextExam(context)
+        if (selectedTab == "今天") {
+            cachedNextExam = AcademicCacheStore.nextExam(context)
+            cachedExams = AcademicCacheStore.loadExams(context)?.result?.exams.orEmpty()
+        }
     }
 
     var permissionRefreshToken by remember {
@@ -541,13 +562,20 @@ fun NpuCourseApp(
         TodayScheduleWidgetUpdater.updateAll(context)
     }
 
+    val showMainBottomBar =
+        (selectedTab != "服务" || !serviceWebPageOpen) &&
+            (selectedTab != "学业" || !academicFullScreenPageOpen)
+
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        )
     ) {
         innerPadding ->
 
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -557,8 +585,21 @@ fun NpuCourseApp(
             Box(
                 modifier =
                     Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxSize()
+                        .haze(bottomBarHazeState)
+                        .then(
+                            if (showMainBottomBar) {
+                                // 主导航是悬浮布局，内容区必须真正为它预留空间。
+                                // 这样所有普通页和二级滚动页的最后一项都能完整滚到导航栏上方。
+                                Modifier
+                                    .windowInsetsPadding(
+                                        WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
+                                    )
+                                    .padding(bottom = 80.dp)
+                            } else {
+                                Modifier
+                            }
+                        )
             ) {
 
                 when (selectedTab) {
@@ -575,6 +616,12 @@ fun NpuCourseApp(
                                 tasks = selectedTasks,
                                 onToggleTask = taskViewModel::setCompleted,
                                 nextExam = cachedNextExam,
+                                onOpenSearch = { showGlobalSearch = true },
+                                onOpenTimetable = { selectedTab = "课表" },
+                                onOpenTasks = {
+                                    internalTaskRequestToken++
+                                    selectedTab = "学业"
+                                },
                                 onOpenAcademicInfo = {
                                     internalAcademicInfoRequestToken++
                                     selectedTab = "学业"
@@ -652,8 +699,9 @@ fun NpuCourseApp(
 
                     "学业" -> {
                         AcademicPage(
-                            openTasksRequestToken = taskNavigationRequestToken,
-                            openAcademicInfoRequestToken = internalAcademicInfoRequestToken
+                            openTasksRequestToken = internalTaskRequestToken,
+                            openAcademicInfoRequestToken = internalAcademicInfoRequestToken,
+                            onFullScreenPageChanged = { academicFullScreenPageOpen = it }
                         )
                     }
 
@@ -697,6 +745,8 @@ fun NpuCourseApp(
                                 appIconStyle = settings.appIconStyle,
                                 courseCardStyle = settings.courseCardStyle,
                                 showSectionTimes = settings.showSectionTimes,
+                                externalDestination = mineDestination,
+                                onExternalDestinationConsumed = { mineDestination = null },
                                 onSemesterSelected = {
                                     semesterId ->
 
@@ -895,13 +945,15 @@ fun NpuCourseApp(
                 )
             }
 
-            if (selectedTab != "服务" || !serviceWebPageOpen) {
+            if (showMainBottomBar) {
                 LiquidGlassBottomBar(
                     items = listOf("今天", "课表", "学业", "服务", "我的"),
                     selectedItem = selectedTab,
                     onItemSelected = {
                         selectedTab = it
-                    }
+                    },
+                    hazeState = bottomBarHazeState,
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
         }
@@ -912,6 +964,32 @@ fun NpuCourseApp(
             info = info,
             onDismiss = {
                 startupUpdateInfo = null
+            }
+        )
+    }
+
+    if (showGlobalSearch) {
+        GlobalSearchPalette(
+            courses = courses,
+            tasks = tasks,
+            exams = cachedExams,
+            onDismiss = { showGlobalSearch = false },
+            onNavigate = { destination ->
+                when (destination) {
+                    GlobalSearchDestination.TIMETABLE -> selectedTab = "课表"
+                    GlobalSearchDestination.TASKS -> {
+                        internalTaskRequestToken++
+                        selectedTab = "学业"
+                    }
+                    GlobalSearchDestination.ACADEMIC -> {
+                        internalAcademicInfoRequestToken++
+                        selectedTab = "学业"
+                    }
+                    else -> {
+                        mineDestination = destination
+                        selectedTab = "我的"
+                    }
+                }
             }
         )
     }

@@ -46,6 +46,8 @@ import com.example.npucourse.model.isActiveInWeek
 import com.example.npucourse.model.weekDisplayText
 import com.example.npucourse.util.campusDisplayName
 import com.example.npucourse.util.getScheduleForCampus
+import com.example.npucourse.ui.components.LiquidGlassButton
+import com.example.npucourse.ui.components.LiquidGlassCard
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -60,7 +62,10 @@ fun TodayPage(
     tasks: List<TaskEntity> = emptyList(),
     onToggleTask: (Long, Boolean) -> Unit = { _, _ -> },
     nextExam: NwpuExamRecord? = null,
-    onOpenAcademicInfo: () -> Unit = {}
+    onOpenAcademicInfo: () -> Unit = {},
+    onOpenTimetable: () -> Unit = {},
+    onOpenTasks: () -> Unit = {},
+    onOpenSearch: () -> Unit = {}
 ) {
 
     var nowMillis by remember {
@@ -215,18 +220,21 @@ fun TodayPage(
                 )
             }
 
-            Text(
-                text =
-                    formatClockTime(
-                        nowMillis
-                    ),
-                fontSize =
-                    18.sp,
-                fontWeight =
-                    FontWeight.SemiBold,
-                color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "⌕  搜索",
+                    modifier = Modifier.clickable(onClick = onOpenSearch).padding(vertical = 5.dp),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = formatClockTime(nowMillis),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         Spacer(
@@ -350,6 +358,21 @@ fun TodayPage(
             )
         }
 
+        Spacer(Modifier.height(22.dp))
+        Text("快速入口", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            LiquidGlassButton(onClick = onOpenTimetable, modifier = Modifier.weight(1f)) {
+                Text("完整课表", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+            LiquidGlassButton(onClick = onOpenTasks, modifier = Modifier.weight(1f)) {
+                Text("新增待办", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+            LiquidGlassButton(onClick = onOpenAcademicInfo, modifier = Modifier.weight(1f)) {
+                Text("考试成绩", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
         Spacer(
             modifier =
                 Modifier.height(28.dp)
@@ -429,7 +452,7 @@ fun TodayPage(
 
         Spacer(
             modifier =
-                Modifier.height(42.dp)
+                Modifier.height(122.dp)
         )
     }
 
@@ -653,21 +676,7 @@ private fun MainCourseCard(
                 Color(0xFF6377F4)
         }
 
-    Card(
-        modifier =
-            Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(26.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surface
-            ),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
-    ) {
+    LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
 
         Column(
             modifier =

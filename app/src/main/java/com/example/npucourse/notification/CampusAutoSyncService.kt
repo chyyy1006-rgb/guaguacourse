@@ -283,9 +283,16 @@ class CampusAutoSyncService : Service() {
                 val trackedIds = repository.syncSemesterCoursesInBackground(
                     semesterId = semester.id,
                     courses = mapped.courses,
-                    trackedCourseIds = CampusServiceStore.trackedCourseIds(this@CampusAutoSyncService)
+                    trackedCourseIds = CampusServiceStore.trackedCourseIds(
+                        this@CampusAutoSyncService,
+                        semester.id
+                    )
                 )
-                CampusServiceStore.setTrackedCourseIds(this@CampusAutoSyncService, trackedIds)
+                CampusServiceStore.setTrackedCourseIds(
+                    this@CampusAutoSyncService,
+                    semester.id,
+                    trackedIds
+                )
                 CampusServiceStore.markScheduleSynced(this@CampusAutoSyncService)
 
                 val settings = SettingsRepository(this@CampusAutoSyncService).settings.first()

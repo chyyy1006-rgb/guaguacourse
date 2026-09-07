@@ -211,7 +211,13 @@ object AppUpdateManager {
                     return@withContext UpdateDownloadResult.Failed("更新地址不是 APK 文件，请检查 GitHub Release 附件")
                 }
 
-                val totalBytes = connection.contentLengthLong.takeIf { it > 0L }
+                val contentLength = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    connection.contentLengthLong
+                } else {
+                    @Suppress("DEPRECATION")
+                    connection.contentLength.toLong()
+                }
+                val totalBytes = contentLength.takeIf { it > 0L }
                 var downloadedBytes = 0L
                 var lastProgress = -1
                 val digest = MessageDigest.getInstance("SHA-256")

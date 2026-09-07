@@ -1,15 +1,21 @@
 {
-  "versionCode": 17,
-  "versionName": "5.2.1",
-  "title": "瓜瓜课程表 5.2.1",
+  "versionCode": 18,
+  "versionName": "5.3.0",
+  "title": "瓜瓜课程表 5.3.0",
   "publishedAt": "2026-09-07",
   "forceUpdate": false,
-  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.2.1/NPUCourse-v5.2.1.apk",
-  "sha256": "这里填写新APK的SHA-256",
+  "downloadUrl": "https://github.com/chyyy1006-rgb/guaguacourse/releases/download/v5.3.0/NPUCourse-v5.3.0.apk",
+  "sha256": "这里填写NPUCourse-v5.3.0.apk的SHA-256",
   "changelog": [
-    "新增液态玻璃风格底部导航栏",
-    "新增课程快捷悬浮窗",
-    "优化课程颜色显示",
-    "修复导航栏点击时出现灰色阴影的问题"
+    "重做「今天」页面，根据当前课程状态动态展示正在上课、下一节课和最近待办",
+    "重构底部导航栏，实现真正的半透明液态玻璃效果，页面内容可延伸至导航栏后方",
+    "修复滑动底部导航至「今天」时无法自动切换页面的问题",
+    "建立统一的 Liquid Glass 视觉组件与样式体系",
+    "升级快捷悬浮窗，支持双击及上下左右滑动分别绑定不同应用",
+    "优化悬浮窗手势识别与防误触逻辑",
+    "新增全局搜索与 Command Palette，可快速搜索课程、待办、考试及功能入口",
+    "重新整理「我的」页面信息架构与功能分组",
+    "继续优化 Jelly 课程卡配色与整体视觉一致性",
+    "优化深色模式、底部安全区域及部分界面交互体验"
   ]
 }

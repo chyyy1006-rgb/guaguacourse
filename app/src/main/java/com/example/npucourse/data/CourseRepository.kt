@@ -131,20 +131,23 @@ class CourseRepository(
     }
 
     /**
-     * 后台安全同步：只管理已经识别为教务来源的课程，不触碰其他本地课程。
-     * 首次运行会优先复用完全匹配的现有条目，避免产生重复课程。
+     * 复用匹配课程的主键与本地个性化字段来同步教务课表。
+     * 前台主动同步可以删除所有已不在教务结果中的课程；后台刷新则只删除
+     * 已追踪的教务课程，不碰用户后来手工添加的内容。
      */
-    suspend fun syncSemesterCoursesInBackground(
+    suspend fun syncSemesterCourses(
         semesterId: Long,
         courses: List<DemoCourse>,
-        trackedCourseIds: Set<Long>
+        trackedCourseIds: Set<Long>,
+        removeAllMissingCourses: Boolean = false
     ): Set<Long> {
         if (semesterId <= 0L || courses.isEmpty()) return trackedCourseIds
 
         return database.withTransaction {
             val existing = dao.getCoursesForSemester(semesterId)
             val trackedExisting = existing.filter { it.id in trackedCourseIds }
-            val candidates = if (trackedExisting.isNotEmpty()) trackedExisting else existing
+            val candidates =
+                if (removeAllMissingCourses || trackedExisting.isEmpty()) existing else trackedExisting
             val unused = candidates.toMutableList()
             val newTrackedIds = mutableSetOf<Long>()
 
@@ -174,8 +177,11 @@ class CourseRepository(
                 }
             }
 
-            if (trackedExisting.isNotEmpty()) {
-                unused.filter { it.id in trackedCourseIds }.forEach { stale ->
+            val staleCourses =
+                if (removeAllMissingCourses) unused else unused.filter { it.id in trackedCourseIds }
+
+            if (removeAllMissingCourses || trackedExisting.isNotEmpty()) {
+                staleCourses.forEach { stale ->
                     taskDao.clearCourseLink(stale.id, System.currentTimeMillis())
                     dao.deleteCourseById(stale.id)
                 }
@@ -184,6 +190,17 @@ class CourseRepository(
             newTrackedIds
         }
     }
+
+    suspend fun syncSemesterCoursesInBackground(
+        semesterId: Long,
+        courses: List<DemoCourse>,
+        trackedCourseIds: Set<Long>
+    ): Set<Long> = syncSemesterCourses(
+        semesterId = semesterId,
+        courses = courses,
+        trackedCourseIds = trackedCourseIds,
+        removeAllMissingCourses = false
+    )
 
 
     /*

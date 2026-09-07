@@ -319,6 +319,7 @@ object TodayScheduleWidgetPinHelper {
         context: Context,
         providerClass: Class<*>
     ): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
         if (!canPin(context)) return false
 
         val provider = ComponentName(

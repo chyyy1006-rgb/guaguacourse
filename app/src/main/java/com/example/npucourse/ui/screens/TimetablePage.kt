@@ -1191,7 +1191,7 @@ private fun WeekSchedule(
         Spacer(
             modifier =
                 Modifier.height(
-                    30.dp
+                    120.dp
                 )
         )
     }

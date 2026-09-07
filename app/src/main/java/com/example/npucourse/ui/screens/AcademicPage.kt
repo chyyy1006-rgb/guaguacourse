@@ -15,6 +15,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,7 +55,8 @@ private enum class AcademicSubPage {
 @Composable
 fun AcademicPage(
     openTasksRequestToken: Int = 0,
-    openAcademicInfoRequestToken: Int = 0
+    openAcademicInfoRequestToken: Int = 0,
+    onFullScreenPageChanged: (Boolean) -> Unit = {}
 ) {
 
     val context =
@@ -138,6 +140,13 @@ fun AcademicPage(
         }
         handledTaskRequestToken = openTasksRequestToken
         handledAcademicInfoRequestToken = openAcademicInfoRequestToken
+    }
+
+    LaunchedEffect(currentPage) {
+        onFullScreenPageChanged(currentPage == AcademicSubPage.PORTAL_LOGIN)
+    }
+    DisposableEffect(Unit) {
+        onDispose { onFullScreenPageChanged(false) }
     }
 
     var portalLoginCompleted by remember {
@@ -386,7 +395,14 @@ fun AcademicPage(
                                     )
                             }
 
-                            CourseSyncStrategy.SMART_MERGE,
+                            CourseSyncStrategy.SMART_MERGE -> {
+                                courseViewModel
+                                    .syncSemesterCourses(
+                                        courses = coursesToApply,
+                                        semesterId = effectiveSemesterId
+                                    )
+                            }
+
                             CourseSyncStrategy.FULL_REPLACE -> {
                                 courseViewModel
                                     .replaceSemesterCourses(

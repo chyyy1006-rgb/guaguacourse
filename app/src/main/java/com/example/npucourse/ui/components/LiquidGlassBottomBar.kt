@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -48,6 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeChild
 
 /**
  * A physics-driven glass navigation lens. Tab centres are measured from the real
@@ -58,6 +63,7 @@ fun LiquidGlassBottomBar(
     items: List<String>,
     selectedItem: String,
     onItemSelected: (String) -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) return
@@ -94,11 +100,23 @@ fun LiquidGlassBottomBar(
         }
     }
 
+    val glassTokens = GlassDefaults.tokens()
     val surface = MaterialTheme.colorScheme.surface
     val outline = MaterialTheme.colorScheme.outline
     val primary = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val barShape = RoundedCornerShape(31.dp)
+    val hazeStyle = HazeStyle(
+        backgroundColor = surface,
+        tints = listOf(
+            HazeTint(surface.copy(alpha = 0.42f)),
+            HazeTint(primary.copy(alpha = 0.045f))
+        ),
+        blurRadius = 24.dp,
+        noiseFactor = 0.055f,
+        fallbackTint = HazeTint(surface.copy(alpha = 0.90f))
+    )
 
     Box(
         modifier = modifier
@@ -107,35 +125,39 @@ fun LiquidGlassBottomBar(
             .padding(horizontal = 18.dp, vertical = 6.dp)
             .height(62.dp)
             .graphicsLayer {
-                shadowElevation = 10.dp.toPx()
-                shape = RoundedCornerShape(31.dp)
+                shadowElevation = 4.dp.toPx()
+                shape = barShape
                 clip = false
             }
+            .clip(barShape)
+            .hazeChild(state = hazeState, style = hazeStyle)
             .drawWithCache {
                 val radius = size.height / 2f
                 val body = Brush.verticalGradient(
                     listOf(
-                        surface.copy(alpha = 0.88f),
-                        surface.copy(alpha = 0.68f),
-                        primary.copy(alpha = 0.055f)
+                        Color.White.copy(alpha = glassTokens.highlightAlpha * 0.30f),
+                        Color.Transparent,
+                        primary.copy(alpha = glassTokens.tintAlpha * 0.48f)
                     )
                 )
                 onDrawBehind {
                     drawRoundRect(body, cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius))
                     drawRoundRect(
-                        color = outline.copy(alpha = 0.20f),
+                        color = outline.copy(alpha = glassTokens.borderAlpha),
                         cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius),
                         style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx())
                     )
                     drawLine(
-                        color = Color.White.copy(alpha = 0.46f),
+                        color = Color.White.copy(alpha = glassTokens.highlightAlpha),
                         start = Offset(radius * 0.72f, 1.5.dp.toPx()),
                         end = Offset(size.width - radius * 0.72f, 1.5.dp.toPx()),
                         strokeWidth = 1.dp.toPx()
                     )
                 }
             }
-            .pointerInput(items, centres.size) {
+            // selectedItem is a key: the gesture coroutine must never retain the
+            // initial "今天" selection while the visual state moves elsewhere.
+            .pointerInput(items, centres.size, selectedItem) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val width = lensWidthPx()
@@ -207,7 +229,7 @@ fun LiquidGlassBottomBar(
                         translationX = visualX - widthPx / 2f
                         scaleX = 1f + motion * 0.075f
                         scaleY = 1f - motion * 0.025f
-                        shadowElevation = 9.dp.toPx()
+                        shadowElevation = 4.dp.toPx()
                         shape = RoundedCornerShape(24.dp)
                         clip = true
                     }
@@ -219,9 +241,9 @@ fun LiquidGlassBottomBar(
                         val r = size.height / 2f
                         val glass = Brush.radialGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.34f),
-                                primary.copy(alpha = 0.16f),
-                                surface.copy(alpha = 0.46f)
+                                Color.White.copy(alpha = glassTokens.highlightAlpha * .85f),
+                                primary.copy(alpha = 0.13f),
+                                surface.copy(alpha = glassTokens.fillAlpha * .52f)
                             ),
                             center = Offset(size.width * 0.42f, size.height * 0.30f),
                             radius = size.maxDimension * 0.78f
@@ -229,12 +251,12 @@ fun LiquidGlassBottomBar(
                         onDrawBehind {
                             drawRoundRect(glass, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
                             drawRoundRect(
-                                Color.White.copy(alpha = 0.68f),
+                                Color.White.copy(alpha = glassTokens.highlightAlpha * 1.25f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(r),
                                 style = androidx.compose.ui.graphics.drawscope.Stroke(1.15.dp.toPx())
                             )
                             drawArc(
-                                color = Color.White.copy(alpha = 0.72f),
+                                color = Color.White.copy(alpha = glassTokens.highlightAlpha * 1.35f),
                                 startAngle = 198f,
                                 sweepAngle = 112f,
                                 useCenter = false,

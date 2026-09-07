@@ -52,9 +52,34 @@ object CampusServiceStore {
             .mapNotNull(String::toLongOrNull)
             .filterTo(mutableSetOf()) { it > 0L }
 
+    fun trackedCourseIds(context: Context, semesterId: Long): Set<Long> {
+        if (semesterId <= 0L) return emptySet()
+        val prefs = preferences(context)
+        val key = "${TRACKED_COURSE_IDS}_$semesterId"
+        val stored = if (prefs.contains(key)) {
+            prefs.getStringSet(key, emptySet()).orEmpty()
+        } else {
+            // 兼容 5.3.0 之前只保存一组课程 ID 的数据。
+            prefs.getStringSet(TRACKED_COURSE_IDS, emptySet()).orEmpty()
+        }
+        return stored.mapNotNull(String::toLongOrNull)
+            .filterTo(mutableSetOf()) { it > 0L }
+    }
+
     fun setTrackedCourseIds(context: Context, ids: Set<Long>) {
         preferences(context).edit()
             .putStringSet(TRACKED_COURSE_IDS, ids.filter { it > 0L }.mapTo(mutableSetOf(), Long::toString))
+            .apply()
+    }
+
+    fun setTrackedCourseIds(context: Context, semesterId: Long, ids: Set<Long>) {
+        if (semesterId <= 0L) return
+        preferences(context).edit()
+            .putStringSet(
+                "${TRACKED_COURSE_IDS}_$semesterId",
+                ids.filter { it > 0L }.mapTo(mutableSetOf(), Long::toString)
+            )
+            .remove(TRACKED_COURSE_IDS)
             .apply()
     }
 
