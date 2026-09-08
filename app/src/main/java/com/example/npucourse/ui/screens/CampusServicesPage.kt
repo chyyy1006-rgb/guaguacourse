@@ -25,15 +25,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,6 +83,7 @@ fun CampusServicesPage(
     val context = LocalContext.current
     var destination by remember { mutableStateOf<CampusWebDestination?>(null) }
     var selectedService by rememberSaveable { mutableStateOf<String?>(null) }
+    var showServiceHelp by rememberSaveable { mutableStateOf(false) }
     var electricityBalance by rememberSaveable {
         mutableStateOf(CampusServiceStore.electricityBalance(context))
     }
@@ -155,21 +160,15 @@ fun CampusServicesPage(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
     ) {
-        CampusPageHeader(title = "服务", onBack = onBack)
-
-        InfoCard(
-            title = "校园服务",
-            detail = "电费与网费连接学校官方系统；校园拼车是第三方平台。瓜瓜课程表不保存统一身份认证密码、网络密码或支付信息。"
+        CampusPageHeader(
+            title = "服务",
+            onBack = onBack,
+            onHelpClick = { showServiceHelp = true }
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        InfoCard(
-            title = "后台自动刷新",
-            detail = "课程表约每 24 小时刷新一次，电费约每 30 分钟刷新一次；余额金额不高于 5 元时通知提醒。若学校只返回剩余电量，则按电量数值不高于 5 提醒。系统省电策略可能延后刷新。"
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
+        if (showServiceHelp) {
+            ServiceHelpDialog(onDismiss = { showServiceHelp = false })
+        }
 
         ServiceCard(
             title = "宿舍电费",
@@ -210,7 +209,7 @@ fun CampusServicesPage(
             onSecondaryClick = { openExternalUrl(context, CAMPUS_CARPOOL_URL) }
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(122.dp))
     }
 }
 
@@ -292,7 +291,11 @@ private fun NetworkFeePage(
 }
 
 @Composable
-private fun CampusPageHeader(title: String, onBack: (() -> Unit)?) {
+private fun CampusPageHeader(
+    title: String,
+    onBack: (() -> Unit)?,
+    onHelpClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -306,12 +309,62 @@ private fun CampusPageHeader(title: String, onBack: (() -> Unit)?) {
         }
         Text(
             text = title,
-            modifier = Modifier.padding(start = 6.dp),
+            modifier = Modifier
+                .padding(start = 6.dp)
+                .weight(1f),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
+        if (onHelpClick != null) {
+            Surface(
+                onClick = onHelpClick,
+                modifier = Modifier.size(32.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "?",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun ServiceHelpDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("服务说明", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("校园服务", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "电费与网费连接学校官方系统；校园拼车是第三方平台。瓜瓜课程表不保存统一身份认证密码、网络密码或支付信息。",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("后台自动刷新", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "课程表约每 24 小时刷新一次，检测到课程变化时通知；电费约每 30 分钟刷新并通知当前余额，余额金额不高于 5 元时会特别提醒充值。若学校只返回剩余电量，则按电量数值不高于 5 提醒。系统省电策略可能延后刷新。",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("知道了")
+            }
+        }
+    )
 }
 
 @Composable

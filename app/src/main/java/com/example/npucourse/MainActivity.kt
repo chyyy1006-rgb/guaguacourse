@@ -19,10 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -40,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.npucourse.data.AppDatabase
@@ -237,20 +234,41 @@ fun NpuCourseApp(
     var internalAcademicInfoRequestToken by remember {
         mutableIntStateOf(academicInfoNavigationRequestToken)
     }
+    var observedTaskRequestToken by remember { mutableIntStateOf(taskNavigationRequestToken) }
+    var observedAcademicInfoRequestToken by remember {
+        mutableIntStateOf(academicInfoNavigationRequestToken)
+    }
+    var observedCampusServicesRequestToken by remember {
+        mutableIntStateOf(campusServicesNavigationRequestToken)
+    }
 
     LaunchedEffect(
         taskNavigationRequestToken,
         academicInfoNavigationRequestToken,
         campusServicesNavigationRequestToken
     ) {
-        if (campusServicesNavigationRequestToken > 0) {
-            selectedTab = "服务"
-        } else if (taskNavigationRequestToken > 0 || academicInfoNavigationRequestToken > 0) {
-            selectedTab = "学业"
+        when {
+            campusServicesNavigationRequestToken > observedCampusServicesRequestToken -> {
+                selectedTab = "服务"
+            }
+            taskNavigationRequestToken > observedTaskRequestToken -> {
+                internalTaskRequestToken = maxOf(
+                    internalTaskRequestToken,
+                    internalAcademicInfoRequestToken
+                ) + 1
+                selectedTab = "学业"
+            }
+            academicInfoNavigationRequestToken > observedAcademicInfoRequestToken -> {
+                internalAcademicInfoRequestToken = maxOf(
+                    internalTaskRequestToken,
+                    internalAcademicInfoRequestToken
+                ) + 1
+                selectedTab = "学业"
+            }
         }
-        if (academicInfoNavigationRequestToken > internalAcademicInfoRequestToken) {
-            internalAcademicInfoRequestToken = academicInfoNavigationRequestToken
-        }
+        observedTaskRequestToken = taskNavigationRequestToken
+        observedAcademicInfoRequestToken = academicInfoNavigationRequestToken
+        observedCampusServicesRequestToken = campusServicesNavigationRequestToken
     }
 
     var cachedNextExam by remember { mutableStateOf(AcademicCacheStore.nextExam(context)) }
@@ -587,19 +605,6 @@ fun NpuCourseApp(
                     Modifier
                         .fillMaxSize()
                         .haze(bottomBarHazeState)
-                        .then(
-                            if (showMainBottomBar) {
-                                // 主导航是悬浮布局，内容区必须真正为它预留空间。
-                                // 这样所有普通页和二级滚动页的最后一项都能完整滚到导航栏上方。
-                                Modifier
-                                    .windowInsetsPadding(
-                                        WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
-                                    )
-                                    .padding(bottom = 80.dp)
-                            } else {
-                                Modifier
-                            }
-                        )
             ) {
 
                 when (selectedTab) {
@@ -619,11 +624,17 @@ fun NpuCourseApp(
                                 onOpenSearch = { showGlobalSearch = true },
                                 onOpenTimetable = { selectedTab = "课表" },
                                 onOpenTasks = {
-                                    internalTaskRequestToken++
+                                    internalTaskRequestToken = maxOf(
+                                        internalTaskRequestToken,
+                                        internalAcademicInfoRequestToken
+                                    ) + 1
                                     selectedTab = "学业"
                                 },
                                 onOpenAcademicInfo = {
-                                    internalAcademicInfoRequestToken++
+                                    internalAcademicInfoRequestToken = maxOf(
+                                        internalTaskRequestToken,
+                                        internalAcademicInfoRequestToken
+                                    ) + 1
                                     selectedTab = "学业"
                                 }
                             )
@@ -978,11 +989,17 @@ fun NpuCourseApp(
                 when (destination) {
                     GlobalSearchDestination.TIMETABLE -> selectedTab = "课表"
                     GlobalSearchDestination.TASKS -> {
-                        internalTaskRequestToken++
+                        internalTaskRequestToken = maxOf(
+                            internalTaskRequestToken,
+                            internalAcademicInfoRequestToken
+                        ) + 1
                         selectedTab = "学业"
                     }
                     GlobalSearchDestination.ACADEMIC -> {
-                        internalAcademicInfoRequestToken++
+                        internalAcademicInfoRequestToken = maxOf(
+                            internalTaskRequestToken,
+                            internalAcademicInfoRequestToken
+                        ) + 1
                         selectedTab = "学业"
                     }
                     else -> {

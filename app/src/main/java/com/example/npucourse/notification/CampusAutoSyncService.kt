@@ -2,16 +2,15 @@ package com.example.npucourse.notification
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Presentation
-import android.app.Service
+import android.app.job.JobParameters
+import android.app.job.JobService
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
@@ -21,9 +20,9 @@ import android.media.ImageReader
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -59,7 +58,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class CampusAutoSyncService : Service() {
+class CampusAutoSyncService : JobService() {
     private enum class Target { ELECTRICITY, SCHEDULE }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -76,24 +75,26 @@ class CampusAutoSyncService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var activeJob: JobParameters? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
-        startAsForeground("正在准备校园服务自动刷新")
+    }
+
+    override fun onStartJob(params: JobParameters): Boolean {
+        if (running) return false
+
+        activeJob = params
+        running = true
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "GuaguaCourse:CampusAutoSync"
         ).apply { acquire(5L * 60L * 1000L) }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (running) return START_NOT_STICKY
-        running = true
 
         val now = System.currentTimeMillis()
-        if (now - CampusServiceStore.lastElectricitySync(this) >= ELECTRICITY_INTERVAL_MILLIS &&
+        if (now - CampusServiceStore.lastElectricitySync(this) >= ELECTRICITY_DUE_MILLIS &&
             !isElectricitySettlementWindow()
         ) {
             targets.add(Target.ELECTRICITY)
@@ -102,14 +103,44 @@ class CampusAutoSyncService : Service() {
             targets.add(Target.SCHEDULE)
         }
 
-        startNextTarget()
-        return START_NOT_STICKY
+        if (targets.isEmpty()) {
+            running = false
+            activeJob = null
+            releaseWakeLock()
+            return false
+        }
+
+        return runCatching {
+            startNextTarget()
+            true
+        }.getOrElse { error ->
+            Log.e(TAG, "Unable to start campus auto sync job", error)
+            running = false
+            activeJob = null
+            currentTarget = null
+            targets.clear()
+            destroyHeadlessWebView()
+            releaseWakeLock()
+            false
+        }
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onStopJob(params: JobParameters): Boolean {
+        val shouldRetry = currentTarget != null
+        running = false
+        activeJob = null
+        currentTarget = null
+        targets.clear()
+        destroyHeadlessWebView()
+        releaseWakeLock()
+        return shouldRetry
+    }
 
     override fun onDestroy() {
         running = false
+        activeJob = null
+        currentTarget = null
+        targets.clear()
         destroyHeadlessWebView()
         releaseWakeLock()
         serviceScope.cancel()
@@ -124,16 +155,14 @@ class CampusAutoSyncService : Service() {
             return
         }
         currentTarget = target
-        if (target == Target.SCHEDULE) {
-            // 课程表无论成功与否都只在约 24 小时后再次尝试。
-            CampusServiceStore.markScheduleSynced(this)
-        }
         attempts = 0
         evaluating = false
-        updateForeground(
-            if (target == Target.ELECTRICITY) "正在刷新宿舍电费" else "正在刷新课程表"
-        )
-        createHeadlessWebView(target)
+        runCatching {
+            createHeadlessWebView(target)
+        }.onFailure { error ->
+            Log.e(TAG, "Unable to create background WebView for $target", error)
+            completeTarget(failed = true)
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -226,7 +255,7 @@ class CampusAutoSyncService : Service() {
             if (result.phase == "balance" && result.balance != null) {
                 val balance = result.balance
                 CampusServiceStore.saveElectricityBalance(this, balance)
-                updateLowElectricityNotification(
+                showElectricityBalanceNotification(
                     displayedBalance = balance,
                     moneyBalance = result.moneyBalance
                 )
@@ -280,13 +309,23 @@ class CampusAutoSyncService : Service() {
                     taskDao = database.taskDao(),
                     database = database
                 )
+                val previousSuccessfulSync =
+                    CampusServiceStore.lastScheduleSync(this@CampusAutoSyncService)
+                val trackedCourseIds = CampusServiceStore.trackedCourseIds(
+                    this@CampusAutoSyncService,
+                    semester.id
+                )
+                val existingCourses = database.courseDao().getCoursesForSemester(semester.id)
+                val previousSchedule = existingCourses
+                    .filter { trackedCourseIds.isEmpty() || it.id in trackedCourseIds }
+                    .map(::scheduleSnapshotOf)
+                val refreshedSchedule = mapped.courses.map(::scheduleSnapshotOf)
+                val scheduleChanges = detectScheduleChanges(previousSchedule, refreshedSchedule)
+
                 val trackedIds = repository.syncSemesterCoursesInBackground(
                     semesterId = semester.id,
                     courses = mapped.courses,
-                    trackedCourseIds = CampusServiceStore.trackedCourseIds(
-                        this@CampusAutoSyncService,
-                        semester.id
-                    )
+                    trackedCourseIds = trackedCourseIds
                 )
                 CampusServiceStore.setTrackedCourseIds(
                     this@CampusAutoSyncService,
@@ -294,6 +333,10 @@ class CampusAutoSyncService : Service() {
                     trackedIds
                 )
                 CampusServiceStore.markScheduleSynced(this@CampusAutoSyncService)
+
+                if (previousSuccessfulSync > 0L && scheduleChanges.hasChanges) {
+                    showScheduleChangeNotification(scheduleChanges)
+                }
 
                 val settings = SettingsRepository(this@CampusAutoSyncService).settings.first()
                 val refreshedCourses = repository.courses.first().filter { it.semesterId == semester.id }
@@ -319,7 +362,11 @@ class CampusAutoSyncService : Service() {
         authenticationRequired: Boolean = false
     ) {
         if (!running) return
-        if (failed && authenticationRequired) showAuthenticationRequiredNotification()
+        if (failed && authenticationRequired) {
+            showAuthenticationRequiredNotification()
+        } else if (!failed) {
+            getSystemService(NotificationManager::class.java).cancel(AUTH_NOTIFICATION_ID)
+        }
         handler.post { startNextTarget() }
     }
 
@@ -337,25 +384,28 @@ class CampusAutoSyncService : Service() {
             host == "authserver.nwpu.edu.cn"
     }
 
-    private fun updateLowElectricityNotification(
+    private fun showElectricityBalanceNotification(
         displayedBalance: Double,
         moneyBalance: Double?
     ) {
         val alertValue = moneyBalance ?: displayedBalance
         val low = alertValue <= LOW_BALANCE_THRESHOLD
-        val wasActive = CampusServiceStore.electricityAlertActive(this)
-        if (low && !wasActive && hasNotificationPermission()) {
-            val text = if (moneyBalance != null) {
-                "电费余额剩余 ${formatNumber(moneyBalance)} 元，请及时充值"
+        if (hasNotificationPermission()) {
+            val valueText = if (moneyBalance != null) {
+                "当前电费余额 ${formatNumber(moneyBalance)} 元"
             } else {
-                "学校仅返回剩余电量 ${formatNumber(displayedBalance)} 度，数值已不高于 5，请及时充值"
+                "当前剩余电量 ${formatNumber(displayedBalance)} 度"
             }
+            val text = if (low) "$valueText，请及时充值" else valueText
             val notification = NotificationCompat.Builder(this, ELECTRICITY_CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("宿舍电费余额不足")
+                .setContentTitle(if (low) "宿舍电费余额不足" else "宿舍电费已刷新")
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(
+                    if (low) NotificationCompat.PRIORITY_HIGH
+                    else NotificationCompat.PRIORITY_DEFAULT
+                )
                 .setAutoCancel(true)
                 .setContentIntent(openServicesPendingIntent())
                 .build()
@@ -363,6 +413,22 @@ class CampusAutoSyncService : Service() {
                 .notify(ELECTRICITY_NOTIFICATION_ID, notification)
         }
         CampusServiceStore.setElectricityAlertActive(this, low)
+    }
+
+    private fun showScheduleChangeNotification(changes: ScheduleChangeSummary) {
+        if (!hasNotificationPermission()) return
+        val detail = changes.description()
+        val notification = NotificationCompat.Builder(this, SCHEDULE_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("课程表有变化")
+            .setContentText(detail)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(openServicesPendingIntent())
+            .build()
+        getSystemService(NotificationManager::class.java)
+            .notify(SCHEDULE_NOTIFICATION_ID, notification)
     }
 
     private fun showAuthenticationRequiredNotification() {
@@ -405,21 +471,21 @@ class CampusAutoSyncService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(
-                SYNC_CHANNEL_ID,
-                "校园服务后台刷新",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "课程表和宿舍电费后台刷新期间显示状态"
-                setShowBadge(false)
-            }
-        )
-        manager.createNotificationChannel(
-            NotificationChannel(
                 ELECTRICITY_CHANNEL_ID,
                 "电费余额提醒",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "宿舍电费剩余值不高于 5 时提醒充值"
+                description = "每次自动刷新后告知宿舍电费余额，余额不足时提醒充值"
+                enableVibration(true)
+            }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SCHEDULE_CHANNEL_ID,
+                "课程表变化提醒",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "自动刷新发现课程安排变化时提醒"
                 enableVibration(true)
             }
         )
@@ -434,48 +500,14 @@ class CampusAutoSyncService : Service() {
         )
     }
 
-    private fun foregroundNotification(status: String): Notification =
-        NotificationCompat.Builder(this, SYNC_CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("瓜瓜课程表")
-            .setContentText(status)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setShowWhen(false)
-            .setContentIntent(openServicesPendingIntent())
-            .build()
-
-    private fun startAsForeground(status: String) {
-        val notification = foregroundNotification(status)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                SYNC_NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            )
-        } else {
-            startForeground(SYNC_NOTIFICATION_ID, notification)
-        }
-    }
-
-    private fun updateForeground(status: String) {
-        getSystemService(NotificationManager::class.java)
-            .notify(SYNC_NOTIFICATION_ID, foregroundNotification(status))
-    }
-
     private fun finishService() {
         running = false
+        currentTarget = null
+        targets.clear()
         destroyHeadlessWebView()
         releaseWakeLock()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
-        }
-        stopSelf()
+        activeJob?.let { jobFinished(it, false) }
+        activeJob = null
     }
 
     private fun prepareHeadlessDisplay() {
@@ -595,22 +627,25 @@ class CampusAutoSyncService : Service() {
         String.format(Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
 
     companion object {
+        private const val TAG = "CampusAutoSync"
         private const val ELECTRICITY_SSO_URL =
             "https://yktapp.nwpu.edu.cn/berserker-auth/cas/login/supwisdom?targetUrl=https%3A%2F%2Fyktapp.nwpu.edu.cn%2Fplat"
         private const val COURSE_TABLE_URL =
             "https://jwxt.nwpu.edu.cn/student/for-std/course-table"
-        private const val ELECTRICITY_INTERVAL_MILLIS = 30L * 60L * 1000L
+        // JobScheduler 的 30 分钟任务可能在最后 5 分钟弹性窗口内运行；
+        // 到期阈值与该窗口对齐，避免轻微提前导致整轮跳过、实际变成约 60 分钟一次。
+        private const val ELECTRICITY_DUE_MILLIS = 25L * 60L * 1000L
         private const val SCHEDULE_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
         private const val POLL_INTERVAL_MILLIS = 1_000L
         private const val MAX_ATTEMPTS = 120
         private const val AUTH_WAIT_ATTEMPTS = 15
         private const val AUTH_NOTICE_INTERVAL_MILLIS = 12L * 60L * 60L * 1000L
         private const val LOW_BALANCE_THRESHOLD = 5.0
-        private const val SYNC_CHANNEL_ID = "campus_auto_sync"
         private const val ELECTRICITY_CHANNEL_ID = "electricity_balance_alerts"
+        private const val SCHEDULE_CHANNEL_ID = "schedule_change_alerts"
         private const val AUTH_CHANNEL_ID = "campus_authentication"
-        private const val SYNC_NOTIFICATION_ID = 52_030
         private const val ELECTRICITY_NOTIFICATION_ID = 52_031
         private const val AUTH_NOTIFICATION_ID = 52_032
+        private const val SCHEDULE_NOTIFICATION_ID = 52_033
     }
 }

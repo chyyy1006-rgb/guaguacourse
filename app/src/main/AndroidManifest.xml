@@ -10,6 +10,10 @@
     <uses-permission
         android:name="android.permission.INTERNET" />
 
+    <!-- JobScheduler 的联网约束需要读取当前网络状态。普通权限，无需运行时授权。 -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+
 
     <!--
         Android 13+ 普通通知。
@@ -38,12 +42,9 @@
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- 后台刷新课程表与电费时运行短时前台数据同步服务。 -->
+    <!-- 前台服务用于课程提醒与用户主动启用的快捷悬浮窗。 -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- 用户主动启用的跨应用快捷悬浮窗。 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -249,17 +250,11 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- 每 30 分钟左右检查一次校园服务刷新任务。 -->
-        <receiver
-            android:name=".notification.CampusAutoSyncReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
         <service
             android:name=".notification.CampusAutoSyncService"
             android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
             android:name=".overlay.QuickOverlayService"
@@ -272,9 +267,7 @@
                 android:value="User-enabled shortcut overlay with an always-visible touch target" />
         </service>
 
-        <!--
-            重启 / 修改系统时间后重建提醒。
-        -->
+        <!-- 重启、系统时间变化或应用更新后重建提醒与持久化刷新任务。 -->
         <receiver
 
             android:name=".notification.AlarmRescheduleReceiver"
@@ -297,6 +290,9 @@
 
                 <action
                     android:name="android.intent.action.TIMEZONE_CHANGED" />
+
+                <action
+                    android:name="android.intent.action.MY_PACKAGE_REPLACED" />
 
 
             </intent-filter>

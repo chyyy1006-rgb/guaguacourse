@@ -19,6 +19,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -121,21 +122,27 @@ fun AcademicPage(
     var currentPage by rememberSaveable {
         mutableStateOf(
             when {
-                openAcademicInfoRequestToken > 0 -> AcademicSubPage.ACADEMIC_INFO
-                openTasksRequestToken > 0 -> AcademicSubPage.TASKS
+                openAcademicInfoRequestToken > openTasksRequestToken ->
+                    AcademicSubPage.ACADEMIC_INFO
+                openTasksRequestToken > openAcademicInfoRequestToken ->
+                    AcademicSubPage.TASKS
                 else -> AcademicSubPage.HOME
             }
         )
     }
 
-    var handledTaskRequestToken by remember { mutableStateOf(openTasksRequestToken) }
-    var handledAcademicInfoRequestToken by remember { mutableStateOf(openAcademicInfoRequestToken) }
+    var handledTaskRequestToken by remember { mutableIntStateOf(openTasksRequestToken) }
+    var handledAcademicInfoRequestToken by remember {
+        mutableIntStateOf(openAcademicInfoRequestToken)
+    }
 
     LaunchedEffect(openTasksRequestToken, openAcademicInfoRequestToken) {
         when {
-            openAcademicInfoRequestToken > handledAcademicInfoRequestToken ->
+            openAcademicInfoRequestToken > handledAcademicInfoRequestToken &&
+                openAcademicInfoRequestToken > openTasksRequestToken ->
                 currentPage = AcademicSubPage.ACADEMIC_INFO
-            openTasksRequestToken > handledTaskRequestToken ->
+            openTasksRequestToken > handledTaskRequestToken &&
+                openTasksRequestToken > openAcademicInfoRequestToken ->
                 currentPage = AcademicSubPage.TASKS
         }
         handledTaskRequestToken = openTasksRequestToken
@@ -480,7 +487,9 @@ fun AcademicPage(
                     start = 24.dp,
                     top = 24.dp,
                     end = 24.dp,
-                    bottom = 40.dp
+                    // 页面必须延伸到悬浮玻璃后方；额外空间放在滚动内容内部，
+                    // 避免父容器在底栏上沿把卡片裁成一块平直矩形。
+                    bottom = 122.dp
                 )
     ) {
 

@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -58,6 +57,7 @@ import dev.chrisbanes.haze.hazeChild
  * A physics-driven glass navigation lens. Tab centres are measured from the real
  * layout so this remains correct when labels, font scale or the item count changes.
  */
+@Suppress("DEPRECATION")
 @Composable
 fun LiquidGlassBottomBar(
     items: List<String>,
@@ -129,8 +129,9 @@ fun LiquidGlassBottomBar(
                 shape = barShape
                 clip = false
             }
-            .clip(barShape)
-            .hazeChild(state = hazeState, style = hazeStyle)
+            // 把圆角形状直接交给 Haze。仅在外层 clip 无法约束 Haze 自己绘制的
+            // fallback/模糊层，部分设备上会因此露出一整块矩形底色。
+            .hazeChild(state = hazeState, shape = barShape, style = hazeStyle)
             .drawWithCache {
                 val radius = size.height / 2f
                 val body = Brush.verticalGradient(
